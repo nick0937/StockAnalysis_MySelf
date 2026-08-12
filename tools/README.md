@@ -18,7 +18,16 @@
 | `verify_rwd.py` | ✗ | Playwright 四寬度 RWD 驗證 |
 | **`inputs/*.py`** | **★ 每次跑都要更新** | 每日蒐集的資料與判斷（見下） |
 
-`inputs/` 內附的是 **2026-08-11 的完整實際資料**，可直接當範例與格式範本。
+**★ 2026-08-12 換組**：追蹤標的已改為 StockAnalysis_MySelf 的 4 檔純個股
+（1504 東元／2618 長榮航／1514 亞力／2603 長榮）。
+`inputs/` 各檔目前是**新組合的空骨架**（key 齊全、值待填，註解寫明每欄要抓什麼），
+各檔都可以 `python <檔名>.py` 直接跑，會列出還沒填的項目。
+前一組合（8 檔）的 **2026-08-11 完整實際資料**已歸檔到
+[`inputs/_example_8stocks_20260811/`](inputs/_example_8stocks_20260811/)，**填資料時請對照該目錄的寫法**
+（含當時每檔調分的理由註解與敘述長度）。
+
+> 本組合只收純個股、不含 ETF —— ETF 要在守則與產生器裡養一套平行的例外分支
+> （卡片區塊、評分、子代理都要分岔），維護成本高而判讀價值低。詳見守則第 1 節。
 
 | `inputs/` | 內容 | 來源 |
 |---|---|---|
@@ -57,9 +66,15 @@ python finalize.py            # 檢查 → 首頁 → COMMIT_MSG（順序已內�
 ## 移植到新追蹤組合（例如航運）
 
 1. 複製整個 repo 骨架：`tools/`、`報告樣式.css`、`報告守則.md`、兩個 `.bat`、`.gitignore`、`index.html`。
-2. **只改 `config.py`**：`STOCKS`、`REPO`、`TITLE`、`SPLIT`（面額變更股）、`TIME_PRESSURE`。
+2. **只改 `config.py`**：`STOCKS`、`REPO`、`TITLE`、`SPLIT`（面額變更股）、`TIME_PRESSURE`、
+   `SECTOR_VARS`（產業特有變數）、`PEER_GROUPS`（同族群去重提醒）。
 3. 清空 `inputs/` 各檔的資料，換成新組合（**保留檔案結構與註解**）。
-4. 依上面的每日流程跑。
+4. **改根目錄 `index.html` 的 header**：`<meta name="description">`、`<h1>` 下方的「N 檔追蹤標的」、
+   `.tgs` 標的標籤列。⚠ `finalize.py` 重建首頁時是**沿用舊檔的 header 與 footer**
+   （`old[:old.find('<a class="big"')]` 與 `old[old.find('<div class="foot">'):]`），
+   不會自動改標的標籤 —— 而且**不可刪掉 `<a class="big"` 與 `<div class="foot">` 這兩個字串**，
+   否則切分會失敗、產生壞檔。
+5. 依上面的每日流程跑。
 
 詳細清單見 [`../報告守則.md`](../報告守則.md) 第 16 節。
 

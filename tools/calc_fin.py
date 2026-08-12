@@ -103,18 +103,27 @@ for code in C.CODES:
     cfi = [f(x) for x in cf["v"]["投資現金流"]]
     cff = [f(x) for x in cf["v"]["融資現金流"]]
     fcf = [f(x) for x in cf["v"]["自由現金流"]]
-    nis = [f(x) for x in inc["v"]["稅後淨利"]]
+    # ★ 淨利必須依「現金流量表自己的季別」對齊，不可直接用損益表的索引。
+    #   Yahoo 各頁更新不同步（例如 1514 損益表已到 2026Q2、現金流仍在 2026Q1），
+    #   若用同一個 i 會拿 Q1 的 CFO 去除 Q2 的淨利，CFO÷淨利 直接失真。
+    ni_by_q = {q: f(inc["v"]["稅後淨利"][i]) for i, q in enumerate(inc["q"])}
+    nis = [ni_by_q.get(q) for q in cf["q"]]
+    if any(x is None for x in nis[:4]):
+        print("⚠ %s：現金流季別 %s 在損益表中找不到對應淨利，CFO÷淨利 將標查無"
+              % (code, [q for q, x in zip(cf["q"][:4], nis[:4]) if x is None]))
     for i in range(len(fcf)):
         if abs((cfo[i] + cfi[i]) - fcf[i]) > 1:
             bad_identity.append((code, cf["q"][i]))
+    ni4 = sum(nis[:4]) if all(x is not None for x in nis[:4]) else None
     cash = {"q": cf["q"][0],
             "cfo": cfo[0] / 1e5, "cfi": cfi[0] / 1e5, "cff": cff[0] / 1e5,
-            "fcf": fcf[0] / 1e5, "ni": nis[0] / 1e5,
+            "fcf": fcf[0] / 1e5,
+            "ni": nis[0] / 1e5 if nis[0] is not None else None,
             "cfo_ni": cfo[0] / nis[0] if nis[0] else None,
             "cfo4": sum(cfo[:4]) / 1e5, "cfi4": sum(cfi[:4]) / 1e5,
             "cff4": sum(cff[:4]) / 1e5, "fcf4": sum(fcf[:4]) / 1e5,
-            "ni4": sum(nis[:4]) / 1e5,
-            "cfo_ni4": sum(cfo[:4]) / sum(nis[:4]) if sum(nis[:4]) else None}
+            "ni4": ni4 / 1e5 if ni4 is not None else None,
+            "cfo_ni4": sum(cfo[:4]) / ni4 if ni4 else None}
 
     eps4 = [eps.get(q) for q in qs[:4]]
     eps4s = sum(x for x in eps4 if x is not None) if all(x is not None for x in eps4) else None
