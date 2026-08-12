@@ -227,22 +227,34 @@ for c in RANK:
       % (len(C.CODES), C.N_INST, len(C.CODES) * C.N_INST))
 
     # 4 資券變化
+    # ★ 守則第 6 節：基準日的融資融券約當日 21:00 才公布。若在此之前產出，
+    #   一律「略過」整個區塊，不以前一交易日的資料充當基準日資料（避免誤導）。
     A('<h3 class="sh">資券變化（近 %d 個交易日）</h3>' % C.N_MARGIN)
-    r = ""
-    for row in ch["margin"][:C.N_MARGIN]:
-        r += ('<tr><td>%s</td>%s%s%s%s%s%s%s%s%s%s</tr>'
-              % (row[0], num_td(row[1]), num_td(row[2], True), num_td(row[3]),
-                 num_td(row[4], True), num_td(row[5]), num_td(row[6]), num_td(row[7]),
-                 num_td(row[8]), num_td(row[9], True), num_td(row[10])))
-    A(twrap('<table><thead><tr><th>日期</th><th>資餘</th><th>資增</th><th>券餘</th><th>券增</th>'
-            '<th>券資比%%</th><th>資券互抵</th><th>當沖率%%</th><th>收盤價</th><th>漲跌%%</th>'
-            '<th>成交量</th></tr></thead><tbody>%s</tbody></table>' % r))
-    mnote = ('僅資增、券增與漲跌% 套用漲跌配色；餘額、券資比與收盤價為中性數值。'
-             '<b>最新列與行情基準日一致</b>——融資融券於當日 21:00 才公布，'
-             '若在盤後不久產出會落後一日，需隔日補跑。')
-    if ch["note"]:
-        mnote += "<b>⚠ " + ch["note"] + "</b>"
-    A('<p class="tnote">%s</p>' % mnote)
+    if getattr(C, "SKIP_MARGIN", False):
+        A('<p class="tnote"><b>⚠ 本期略過資券分析。</b>'
+          '融資融券由證交所約當日 21:00 公布，本報告於 %s 產出，'
+          '<b>基準日 %s 的資券資料尚未公布</b>。'
+          '依守則第 6 節，此時一律略過整個區塊，<b>不以前一交易日（%s）的資料充當基準日資料</b>，'
+          '以免誤判融資增減與券資比的方向；<b>籌碼面評分亦已排除資券項目</b>'
+          '（改以法人動態、外資持股比重、主力進出、家數差、集中度與大戶籌碼計分）。'
+          '隔日補跑即可取得完整資券，判讀可能因此改變。</p>'
+          % (getattr(C, "RUN_TIME", "收盤後"), C.BASE_DATE,
+             getattr(C, "MARGIN_PREV_DATE", "前一交易日")))
+    else:
+        r = ""
+        for row in ch["margin"][:C.N_MARGIN]:
+            r += ('<tr><td>%s</td>%s%s%s%s%s%s%s%s%s%s</tr>'
+                  % (row[0], num_td(row[1]), num_td(row[2], True), num_td(row[3]),
+                     num_td(row[4], True), num_td(row[5]), num_td(row[6]), num_td(row[7]),
+                     num_td(row[8]), num_td(row[9], True), num_td(row[10])))
+        A(twrap('<table><thead><tr><th>日期</th><th>資餘</th><th>資增</th><th>券餘</th><th>券增</th>'
+                '<th>券資比%%</th><th>資券互抵</th><th>當沖率%%</th><th>收盤價</th><th>漲跌%%</th>'
+                '<th>成交量</th></tr></thead><tbody>%s</tbody></table>' % r))
+        mnote = ('僅資增、券增與漲跌% 套用漲跌配色；餘額、券資比與收盤價為中性數值。'
+                 '<b>最新列與行情基準日一致。</b>')
+        if ch["note"]:
+            mnote += "<b>⚠ " + ch["note"] + "</b>"
+        A('<p class="tnote">%s</p>' % mnote)
 
     # 5 主力進出
     A('<h3 class="sh">主力進出（近 %d 個交易日）</h3>' % C.N_MAIN)
