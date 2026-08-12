@@ -1,0 +1,454 @@
+/* ============================================================================
+   台股每日個股觀察報告 — 完整樣式表（單一自足報告用）
+   ----------------------------------------------------------------------------
+   用途：產生報告時把本檔內容整段內嵌到 <style>...</style>，不要用 <link> 外連
+         （報告規格要求單一自足 HTML、不引用任何外部資源）。
+   來源：由 20260811/index.html 的 <style> 區塊原樣匯出，已包含三層：
+         (1) 基礎版型（mobile-first、卡片、表格、指標格、標籤配色）
+         (2) 2026-08-12 一次改版（操作條件盒 .aop/.opbox）
+         (3) 2026-08-12 二次改版（開頭精簡、大盤不顯示線圖、總覽 .o-ev/.o-hv、
+             表頭固定欄寬、窄表格 .tnarrow）
+   注意：第 (2) 層的 .aop/.o-vd 已被第 (3) 層以 display:none 停用，保留是為了
+         讓舊版報告仍能正確顯示；新報告請只使用 .o-ev / .o-hv / .opbox。
+   斷點：基準為手機，往上用 @media(min-width:640px) 與 @media(min-width:1000px)
+   ============================================================================ */
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+:root{
+ --bg:#f4f6f9;--card:#fff;--ink:#1a2230;--ink2:#4a5768;--ink3:#7a8798;
+ --line:#dde3ea;--line2:#eef2f6;
+ --up:#c62828;--dn:#1b7a3d;--flat:#7a8798;
+ --s70:#1f5fa9;--s55:#5b8fc9;--s45:#9aa8bb;--s00:#c3cad4;
+ --nav:#1b2534;--acc:#1f5fa9;--warn:#8a5a00;--warnbg:#fff8e6;
+ --pad:12px;--r:10px;
+}
+html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden}
+body{background:var(--bg);color:var(--ink);overflow-wrap:break-word;word-break:break-word;
+ font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+ font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+a{color:var(--acc);text-decoration:none}
+img,svg,table{max-width:100%}
+small{font-size:.82em;color:var(--ink3)}
+
+/* ---- 置頂導覽 ---- */
+.nav{position:sticky;top:0;z-index:50;background:var(--nav);
+ padding:0 env(safe-area-inset-right) 0 env(safe-area-inset-left);
+ box-shadow:0 1px 6px rgba(0,0,0,.18)}
+.nav ul{display:flex;gap:0;margin:0;padding:0;list-style:none;overflow-x:auto;
+ -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:none}
+.nav ul::-webkit-scrollbar{display:none}
+.nav li{flex:1 0 auto}
+.nav a{display:flex;align-items:center;justify-content:center;min-height:44px;padding:0 14px;
+ color:#e6ecf4;font-size:14px;font-weight:600;white-space:nowrap}
+
+/* ---- 標題 ---- */
+.hero{padding:var(--pad);padding-top:16px}
+.hero h1{margin:0 0 6px;font-size:clamp(19px,5.2vw,30px);line-height:1.28;letter-spacing:-.01em}
+.hero .sub{margin:0 0 10px;color:var(--ink2);font-size:clamp(12.5px,3.4vw,14.5px)}
+.meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0 0}
+.meta div{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;min-width:0}
+.meta span{display:block;font-size:11.5px;color:var(--ink3);letter-spacing:.02em}
+.meta b{display:block;font-size:13.5px;font-weight:700;margin-top:1px}
+
+/* ---- 卡片 ---- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+ margin:var(--pad);padding:var(--pad);scroll-margin-top:56px;min-width:0}
+.sect{margin:0 0 8px;font-size:clamp(17px,4.6vw,23px);line-height:1.3}
+.sh{margin:18px 0 8px;font-size:clamp(13.5px,3.7vw,16px);color:var(--ink);
+ padding-left:9px;border-left:3px solid var(--acc);line-height:1.4}
+
+/* ---- 卡片標頭（grid-template-areas 重排） ---- */
+.chd{display:grid;gap:6px 10px;align-items:center;
+ grid-template-columns:minmax(0,1fr);
+ grid-template-areas:"nm" "px" "spk" "tag";
+ padding-bottom:10px;border-bottom:1px solid var(--line2)}
+.cnm{grid-area:nm;margin:0;font-size:clamp(17px,4.8vw,22px);line-height:1.25}
+.cnm a{color:var(--ink)}
+.cnm em{display:inline-block;margin-left:7px;font-style:normal;font-size:.66em;color:var(--ink3);font-weight:600}
+.cpx{grid-area:px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.px{font-size:clamp(23px,7vw,32px);font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.pchg{font-size:clamp(13px,3.7vw,15.5px);font-weight:700;font-variant-numeric:tabular-nums}
+.cspk{grid-area:spk;min-width:0}
+.spk{display:block;width:100%;height:44px}
+.ctag{grid-area:tag;display:flex;flex-wrap:wrap;gap:5px}
+.tg{background:var(--line2);color:var(--ink2);border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:600}
+.mkthd{grid-template-areas:"nm" "px" "spk" "tag"}
+
+.up{color:var(--up)}.dn{color:var(--dn)}.flat{color:var(--flat)}
+.ok{color:var(--dn)}
+
+/* ---- 指標格：手機2欄 ---- */
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.mc{background:#fafbfd;border:1px solid var(--line2);border-radius:8px;padding:7px 9px;min-width:0}
+.mcl{display:block;font-size:11.5px;color:var(--ink3);letter-spacing:.02em;line-height:1.4}
+.mcv{display:block;font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.45;margin-top:1px}
+.mc.up .mcv{color:var(--up)}.mc.dn .mcv{color:var(--dn)}
+
+/* ---- 均線位置條 ---- */
+.mabh{font-size:13px;color:var(--ink2);margin-bottom:6px}
+.mabs{display:flex;flex-wrap:wrap;gap:5px}
+.mab{font-size:11.5px;font-weight:600;border-radius:6px;padding:3px 8px;
+ font-variant-numeric:tabular-nums;border:1px solid transparent;white-space:nowrap}
+.mab.ok{background:#fdecec;color:var(--up);border-color:#f6d3d3}
+.mab.no{background:#e8f4ec;color:var(--dn);border-color:#cfe6d8}
+.mab.na{background:var(--line2);color:var(--ink3)}
+
+/* ---- 大盤環境分 ---- */
+.envwrap{margin-top:12px}
+.env{display:grid;gap:4px 10px;grid-template-columns:auto auto;grid-template-areas:"l n" "t t" "d d";
+ align-items:center;background:#f7f9fc;border:1px solid var(--line);border-radius:8px;padding:10px 11px}
+.envl{grid-area:l;font-size:12.5px;color:var(--ink3);font-weight:600}
+.envn{grid-area:n;justify-self:end;font-size:clamp(24px,7vw,32px);font-weight:800;line-height:1;
+ font-variant-numeric:tabular-nums}
+.envt{grid-area:t;display:block;height:8px;background:var(--line2);border-radius:99px;overflow:hidden}
+.envt i{display:block;height:100%;border-radius:99px}
+.envd{grid-area:d;font-size:12px;color:var(--ink2)}
+.s70b{color:var(--s70)}.s55b{color:var(--s55)}.s45b{color:var(--s45)}.s00b{color:var(--s00)}
+.s70{background:var(--s70)}.s55{background:var(--s55)}.s45{background:var(--s45)}.s00{background:var(--s00)}
+.pm{display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:5px;
+ font-weight:800;font-size:13px}
+.pm.p{background:#fdecec;color:var(--up)}
+.pm.m{background:#e8f4ec;color:var(--dn)}
+
+/* ---- 表格 ---- */
+.thint{font-size:11px;color:var(--ink3);text-align:right;margin:0 0 3px}
+.twrap{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+ border:1px solid var(--line);border-radius:8px;max-width:100%}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:12.5px;background:var(--card)}
+th,td{padding:6px 9px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line2)}
+thead th{background:#f2f5f9;font-size:11.5px;color:var(--ink2);font-weight:700;position:sticky;top:0;z-index:2}
+tbody tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{position:sticky;left:0;background:var(--card);z-index:3;
+ box-shadow:1px 0 0 var(--line2);font-weight:700}
+thead th:first-child{background:#f2f5f9;z-index:4}
+td.desc{white-space:normal;min-width:230px;font-size:12px;color:var(--ink2);line-height:1.55}
+.envtb td:first-child{min-width:96px}
+.tnote{font-size:11.5px;color:var(--ink3);margin:5px 0 0;line-height:1.55}
+
+/* ---- 總覽排名（CSS Grid，非 table） ---- */
+.ovt{display:grid;gap:8px}
+.ovh{display:none}
+.ovr{display:grid;gap:4px 10px;min-width:0;
+ grid-template-columns:auto minmax(0,1fr) auto;
+ grid-template-areas:"rk nm px" "rk vd cg" "sub sub sub";
+ background:#fafbfd;border:1px solid var(--line2);border-radius:8px;padding:9px 10px}
+.o-rk{grid-area:rk;align-self:center;font-size:13px;font-weight:800;color:var(--ink3);
+ min-width:30px;font-variant-numeric:tabular-nums}
+.o-nm{grid-area:nm;min-width:0;font-size:15px;font-weight:700}
+.o-nm a{color:var(--ink);display:inline-flex;align-items:center;min-height:26px}
+.o-nm em{font-style:normal;font-size:11.5px;color:var(--ink3);margin-left:6px;font-weight:600}
+.o-px{grid-area:px;justify-self:end;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
+.o-cg{grid-area:cg;justify-self:end;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.o-sc{grid-area:sc;display:none}
+.o-vd{grid-area:vd}
+.o-sub{grid-area:sub;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;
+ border-top:1px dashed var(--line);padding-top:6px;margin-top:2px}
+.o-sub i{display:flex;flex-direction:column;align-items:center;font-style:normal;gap:1px}
+.o-sub u{text-decoration:none;font-size:10.5px;color:var(--ink3)}
+.o-sub b{font-size:13.5px;font-variant-numeric:tabular-nums}
+.vd{display:inline-block;border-radius:6px;padding:2px 9px;font-size:12px;font-weight:700;color:#fff;
+ white-space:nowrap}
+.s70v{background:var(--s70)}.s55v{background:var(--s55)}.s45v{background:var(--s45)}.s00v{background:var(--s00)}
+
+/* ---- 五面向評分條 ---- */
+.sbs{display:grid;gap:6px}
+.sbr{display:grid;grid-template-columns:98px minmax(0,1fr) 34px;gap:8px;align-items:center}
+.sbl{font-size:12px;color:var(--ink2);font-weight:600}
+.sbl em{font-style:normal;color:var(--ink3);font-size:10.5px;margin-left:4px}
+.sbt{display:block;height:9px;background:var(--line2);border-radius:99px;overflow:hidden}
+.sbt i{display:block;height:100%;border-radius:99px}
+.sbv{font-size:13px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+.sbr.tot .sbl{color:var(--ink);font-weight:800}
+.sbr.tot .sbt{height:12px}
+.sbr.tot .sbv{font-size:15px}
+
+/* ---- 文字區塊 ---- */
+.para{margin:0 0 8px;font-size:13.5px;line-height:1.8;color:var(--ink2)}
+.para.small{font-size:12.5px}
+.para.lead{font-size:14.5px;color:var(--ink);font-weight:500}
+.para.warn{background:var(--warnbg);border:1px solid #f0dfb0;border-left:3px solid #d8a72a;
+ border-radius:8px;padding:9px 11px;color:#6b4c00}
+.para.conflict{background:#fdecec;border:1px solid #f3cfcf;border-left:3px solid var(--up);
+ border-radius:8px;padding:9px 11px;color:#7d1f1f;font-size:13px}
+.para.chipnote{background:#f4f8f4;border:1px solid #d6e6d6;border-left:3px solid var(--dn);
+ border-radius:8px;padding:9px 11px;color:#1f4a2e;font-size:12.5px;margin-top:8px}
+.para.chipnote b{color:#14361f}
+.para.ops{background:#f2f7fc;border:1px solid #d6e5f4;border-left:3px solid var(--acc);
+ border-radius:8px;padding:9px 11px;color:#17384f}
+.para.tgt{background:#fafbfd;border:1px solid var(--line2);border-radius:8px;padding:9px 11px;font-size:12.5px}
+.lst{margin:0;padding-left:20px}
+.lst li{font-size:13px;line-height:1.75;color:var(--ink2);margin-bottom:6px}
+.lst.small li{font-size:12.5px}
+.lst.rsk li::marker{color:var(--up)}
+.fbx{display:grid;gap:8px}
+.fb{background:#fafbfd;border:1px solid var(--line2);border-radius:8px;padding:9px 11px;min-width:0}
+.fb h4{margin:0 0 4px;font-size:12.5px;color:var(--acc);letter-spacing:.02em}
+.fb p{margin:0;font-size:12.5px;line-height:1.75;color:var(--ink2)}
+
+/* ---- 新聞 ---- */
+.nws{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.nws li{display:grid;gap:1px 8px;grid-template-columns:auto minmax(0,1fr);
+ grid-template-areas:"d t" "s s";background:#fafbfd;border:1px solid var(--line2);
+ border-radius:8px;padding:7px 10px;min-width:0}
+.nd{grid-area:d;font-size:11.5px;color:var(--ink3);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.nws a{grid-area:t;font-size:13px;font-weight:600;line-height:1.55;display:block;min-height:22px}
+.ns{grid-area:s;font-size:11px;color:var(--ink3)}
+
+/* ---- 建議分組 ---- */
+.grps{display:grid;gap:9px}
+.grp{border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fafbfd;min-width:0}
+.grp h4{margin:0 0 6px;font-size:13.5px}
+.cnt{font-size:11.5px;color:var(--ink3);font-weight:600;margin-left:5px}
+.glist{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+.glist li{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:26px}
+.glist a{font-size:13.5px;font-weight:700}
+.glist b{font-size:13.5px;font-variant-numeric:tabular-nums}
+.gd{font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums}
+
+/* ---- 回頂端 / 頁尾 ---- */
+.top{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;
+ margin-top:14px;background:var(--line2);color:var(--ink2);border-radius:8px;font-size:13px;font-weight:700}
+.foot{margin:var(--pad);padding:var(--pad);background:#eef1f5;border:1px solid var(--line);
+ border-radius:var(--r);font-size:11.5px;color:var(--ink3);line-height:1.75}
+.foot h3{margin:0 0 5px;font-size:13px;color:var(--ink2)}
+
+/* ---- 平板 ---- */
+@media(min-width:640px){
+ :root{--pad:16px}
+ body{font-size:15.5px}
+ .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+ .meta{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .chd{grid-template-columns:minmax(0,1.1fr) auto;grid-template-areas:"nm px" "tag px" "spk spk"}
+ .mkthd{grid-template-columns:minmax(0,1.1fr) auto;grid-template-areas:"nm px" "tag px" "spk spk"}
+ .cpx{justify-self:end;align-items:baseline}
+ .spk{height:54px}
+ .ovr{grid-template-columns:auto minmax(0,1.4fr) auto auto auto;
+  grid-template-areas:"rk nm px cg sc" "sub sub sub sub vd"}
+ .o-sc{display:block;justify-self:end}
+ .o-sc b{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+ .o-vd{justify-self:end;align-self:center}
+ .o-sub{border-top:none;padding-top:0;margin-top:4px;grid-template-columns:repeat(5,auto);
+  justify-content:start;gap:12px}
+ .env{grid-template-columns:auto auto minmax(0,1fr);grid-template-areas:"l n t" "d d d"}
+ .envt{margin-left:6px}
+ .fbx{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .grps{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .nws li{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"d t s"}
+ .ns{align-self:center;white-space:nowrap}
+ .sbr{grid-template-columns:120px minmax(0,1fr) 40px}
+ .thint{display:none}
+}
+
+/* ---- 桌機 ---- */
+@media(min-width:1000px){
+ body{font-size:16px}
+ .nav ul{max-width:1180px;margin:0 auto;justify-content:flex-start}
+ .nav li{flex:0 0 auto}
+ .wrap{max-width:1180px;margin:0 auto}
+ .grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+ .ovh{display:grid;gap:10px;grid-template-columns:auto minmax(0,1.4fr) auto auto auto minmax(0,1.5fr) auto;
+  grid-template-areas:"rk nm px cg sc sub vd";padding:0 11px;
+  font-size:11.5px;color:var(--ink3);font-weight:700}
+ .ovh span{display:block}
+ .ovh .o-px,.ovh .o-cg,.ovh .o-sc,.ovh .o-vd{justify-self:end}
+ .ovr{grid-template-columns:auto minmax(0,1.4fr) auto auto auto minmax(0,1.5fr) auto;
+  grid-template-areas:"rk nm px cg sc sub vd";align-items:center}
+ .o-sub{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:0;justify-content:stretch}
+ .grps{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .spk{height:62px}
+ .card{padding:18px 20px}
+}
+
+/* ---- hover ---- */
+@media(hover:hover){
+ .nav a:hover{background:#2b3950;color:#fff}
+ .top:hover{background:#e2e8ef;color:var(--ink)}
+ .nws a:hover,.o-nm a:hover,.glist a:hover{text-decoration:underline}
+ .ovr:hover{border-color:#c3d2e2;background:#f5f8fc}
+}
+
+/* ---- 列印 ---- */
+@media print{
+ :root{--bg:#fff}
+ body{font-size:10.5pt;background:#fff}
+ .nav,.top,.thint{display:none!important}
+ .card{break-inside:avoid;page-break-inside:avoid;margin:0 0 8pt;border:1px solid #bbb;box-shadow:none}
+ .twrap{overflow:visible}
+ table{font-size:8.5pt}
+ th:first-child,td:first-child,thead th{position:static}
+ .nws a{text-decoration:none;color:#000}
+ .grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+ a[href^="http"]::after{content:"";}
+}
+
+/* ── 財報三表 ── */
+.sh4{margin:14px 0 6px;font-size:clamp(12.5px,3.4vw,14.5px);color:var(--ink2);font-weight:700}
+.sh4::before{content:"▍";color:var(--acc);margin-right:5px}
+.fqs{font-size:11.5px;color:var(--ink3);font-weight:500;display:block;margin-top:2px}
+@media(min-width:640px){.fqs{display:inline;margin-left:8px}}
+.supp{margin-top:10px;background:#fafbfd;border:1px solid var(--line2);border-radius:8px;padding:9px 10px;min-width:0}
+.supp>b{display:block;font-size:12.5px;color:var(--acc);margin-bottom:6px}
+.para.finwarn{background:#fdecec;border:1px solid #f3cfcf;border-left:3px solid var(--up);
+ border-radius:8px;padding:9px 11px;color:#7d1f1f;font-size:12.5px;margin-top:9px}
+.para.finread{background:#f7f9fc;border:1px solid var(--line);border-left:3px solid var(--acc);
+ border-radius:8px;padding:10px 12px;font-size:13px;margin-top:9px}
+.tnote.splitnote{background:#fff8e6;border:1px solid #f0dfb0;border-radius:6px;padding:7px 9px;color:#6b4c00;margin-top:6px}
+.tnote.fdet{background:#f4f8f4;border:1px solid #d6e6d6;border-radius:6px;padding:7px 9px;color:#1f4a2e;margin-top:7px;font-size:12px}
+
+/* ── 雙情境建議 ── */
+.acts{display:grid;gap:9px}
+.act{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#fafbfd;min-width:0}
+.acth{display:grid;gap:3px 8px;grid-template-columns:auto minmax(0,1fr);
+ grid-template-areas:"w q" "v v";align-items:center;margin-bottom:6px}
+.actw{grid-area:w;background:var(--nav);color:#fff;border-radius:6px;padding:2px 9px;font-size:12px;font-weight:700;white-space:nowrap}
+.actq{grid-area:q;font-size:12.5px;color:var(--ink3)}
+.acth .vd{grid-area:v;justify-self:start;font-size:13px;padding:3px 12px}
+.actp{margin:0;font-size:13px;line-height:1.8;color:var(--ink2)}
+.vd2{display:inline-flex;align-items:center;gap:4px;margin-top:3px}
+.vd2 i{font-style:normal;font-size:10.5px;color:var(--ink3)}
+.vd2 b{border-radius:5px;padding:1px 7px;font-size:11px;font-weight:700;color:#fff;white-space:nowrap}
+.o-vd{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+@media(min-width:640px){
+ .acts{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .acth{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"w q v"}
+ .acth .vd{justify-self:end}
+ .o-vd{align-items:flex-end}
+}
+
+/* ══ 建議標籤系統：視覺重量 = 行動急迫性 ══ */
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:6px;padding:3px 9px;
+ font-size:11.5px;font-weight:700;white-space:nowrap;border:1.5px solid transparent;line-height:1.5}
+.chip i{font-style:normal;font-size:10px;line-height:1;opacity:.9}
+.chip.big{font-size:13.5px;padding:5px 13px;border-radius:7px}
+.chip.big i{font-size:12px}
+/* 買方向：藍，越可行動越深 */
+.e-go{background:#17497f;color:#fff;border-color:#17497f}
+.e-part{background:#3d7ab8;color:#fff;border-color:#3d7ab8}
+.e-wait{background:#fff;color:#1f5fa9;border-color:#9dbcdd}
+/* 不動作：灰，視覺重量最低 */
+.e-no{background:#eef1f5;color:#8b95a3;border-color:#e3e8ee}
+/* 持有：續抱＝低重量白底；賣方向＝琥珀→磚，越急越深 */
+.h-keep{background:#fff;color:#5a6675;border-color:#ccd4de}
+.h-tp{background:#fff8e6;color:#8a5a00;border-color:#e0c27f}
+.h-cut{background:#c07a12;color:#fff;border-color:#c07a12}
+.h-exit{background:#9e3414;color:#fff;border-color:#9e3414}
+/* 分數落點：降為中性外框，不與行動標籤搶視覺 */
+.band{display:inline-block;background:#f2f5f9;color:#5a6675;border:1px solid #dde3ea;
+ border-radius:6px;padding:2px 9px;font-size:11px;font-weight:700;white-space:nowrap}
+/* 總覽建議欄：三層堆疊 */
+.o-vd{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.arow{display:inline-flex;align-items:center;gap:6px}
+.arow u{text-decoration:none;font-size:10.5px;color:var(--ink3);min-width:24px}
+/* 五面向小分：數字回歸中性，改用細條表達強弱 */
+.o-sub b{font-size:13.5px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.o-sub s{display:block;text-decoration:none;width:100%;height:3px;background:var(--line2);
+ border-radius:99px;overflow:hidden;margin-top:2px}
+.o-sub s em{display:block;height:100%;border-radius:99px;background:#9aa8bb}
+.o-sub s.hi em{background:#17497f}
+.o-sub s.lo em{background:#d9dee5}
+/* 圖例 */
+.legend{border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fafbfd;
+ margin-bottom:10px;display:grid;gap:6px;min-width:0}
+.lgt{font-size:11.5px;color:var(--ink3)}
+.lgt b{color:var(--ink2)}
+.lgrow{display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+.lgrow u{text-decoration:none;font-size:11px;color:var(--ink3);font-weight:700;min-width:26px}
+/* 卡片雙情境標頭沿用 chip */
+.acth .chip{grid-area:v;justify-self:start}
+@media(min-width:640px){
+ .o-vd{align-items:flex-end}
+ .acth .chip{justify-self:end}
+ .legend{grid-template-columns:1fr auto auto;align-items:center}
+}
+@media print{.chip{border:1px solid #999!important;background:#fff!important;color:#000!important}}
+
+
+/* ══ 總覽排名改版：拿掉五面向小分，建議欄升級為可操作條件 ══ */
+.o-sub{display:none!important}
+.ovr{grid-template-columns:auto minmax(0,1fr) auto;
+ grid-template-areas:"rk nm px" "rk sc cg" "vd vd vd";align-items:start}
+.o-sc{display:block!important;grid-area:sc;justify-self:start}
+.o-sc b{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+.o-vd{grid-area:vd;display:grid;gap:6px;justify-self:stretch;align-items:stretch;
+ margin-top:7px;border-top:1px dashed var(--line);padding-top:8px}
+.o-vd .band{justify-self:start}
+.aop{display:grid;gap:3px 8px;grid-template-columns:auto minmax(0,1fr);
+ background:#fff;border:1px solid var(--line2);border-radius:7px;padding:8px 10px;min-width:0}
+.aop .arow{grid-column:1/-1;margin-bottom:2px}
+.aol{font-size:10.5px;color:var(--ink3);font-weight:700;white-space:nowrap;align-self:start;padding-top:2px}
+.aoz{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink);min-width:0}
+.aoz small{display:block;font-size:10.5px;font-weight:600;color:var(--ink3);
+ font-variant-numeric:normal;margin-top:1px}
+.aoc{font-size:11.5px;color:var(--ink2);line-height:1.65;min-width:0}
+.aop.nobuy .aoz{color:var(--ink3);font-size:13px}
+/* 卡片內的操作條件盒 */
+.opbox{display:grid;gap:3px 9px;grid-template-columns:auto minmax(0,1fr);
+ background:#fff;border:1px solid var(--line);border-radius:7px;padding:9px 11px;margin:0 0 9px}
+.opbox .aol{font-size:11px}
+.opbox .aoz{font-size:15px}
+.opbox .aoc{font-size:12.5px}
+@media(min-width:640px){
+ .ovh{grid-template-columns:auto minmax(96px,0.7fr) auto auto auto minmax(0,3.2fr);
+  grid-template-areas:"rk nm px cg sc vd";gap:10px}
+ .ovr{grid-template-columns:auto minmax(96px,0.7fr) auto auto auto minmax(0,3.2fr);
+  grid-template-areas:"rk nm px cg sc vd";align-items:center;gap:4px 10px}
+ .o-vd{margin-top:0;border-top:none;padding-top:0;
+  grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
+ .o-vd .band{grid-column:1/-1;justify-self:start}
+ .o-sc{justify-self:end}
+}
+@media(min-width:1000px){
+ .ovh,.ovr{grid-template-columns:auto minmax(110px,0.6fr) auto auto auto minmax(0,3.8fr);
+  grid-template-areas:"rk nm px cg sc vd"}
+}
+@media print{.aop,.opbox{border:1px solid #999}}
+
+
+/* ══ 2026-08-12 二次改版：開頭與大盤精簡、總覽只留標籤＋區間、表頭對齊 ══ */
+.hero .sub{display:none}
+.hero .hint{margin:10px 0 0;color:var(--ink2);font-size:clamp(12px,3.2vw,13.5px);line-height:1.7}
+.hero .hint a{color:var(--acc);text-decoration:underline;font-weight:700}
+.mkt .cspk{display:none}                    /* 大盤不顯示線圖 */
+.o-vd,.aop{display:none!important}          /* 停用前一版的建議欄 */
+.ovt{gap:8px}
+.ovr{grid-template-columns:auto minmax(0,1fr) auto;
+ grid-template-areas:"rk nm px" "rk sc cg" "ev ev ev" "hv hv hv";
+ align-items:center;gap:6px 10px;padding:10px 11px}
+.o-rk{align-self:center}
+.o-sc{display:block!important;grid-area:sc;justify-self:start;text-align:left}
+.o-sc b{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+.o-sc s{display:block;text-decoration:none;font-size:10px;font-weight:700;
+ color:var(--ink3);margin-top:-3px;letter-spacing:.02em}
+.o-ev{grid-area:ev}
+.o-hv{grid-area:hv}
+.o-ev,.o-hv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 8px;align-items:center;
+ background:#fff;border:1px solid var(--line2);border-radius:7px;padding:7px 10px;min-width:0}
+.o-ev .ol,.o-hv .ol{font-size:10.5px;color:var(--ink3);font-weight:700;white-space:nowrap}
+.o-ev .chip,.o-hv .chip{justify-self:start}
+.ozn{font-size:14.5px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink);
+ justify-self:start;min-width:0}
+.ovh .o-ev,.ovh .o-hv{background:none;border:none;padding:0;display:block}
+/* ★ 表頭與資料列是兩個獨立 grid 容器，auto 欄寬各算各的會對不齊 → 一律用固定寬度 */
+@media(min-width:640px){
+ .ovh{display:grid;gap:10px;padding:0 12px 2px;align-items:end;
+  grid-template-columns:34px minmax(84px,1fr) 66px 62px 52px minmax(0,1.5fr) minmax(0,1.5fr);
+  grid-template-areas:"rk nm px cg sc ev hv";border-bottom:1px solid var(--line);margin-bottom:2px}
+ .ovr{grid-template-columns:34px minmax(84px,1fr) 66px 62px 52px minmax(0,1.5fr) minmax(0,1.5fr);
+  grid-template-areas:"rk nm px cg sc ev hv";align-items:center;gap:10px;padding:10px 12px}
+ .ovh .o-px,.ovh .o-cg,.ovh .o-sc{justify-self:end}
+ .o-px,.o-cg{justify-self:end}
+ .o-sc{justify-self:end;text-align:right}
+}
+@media(min-width:1000px){
+ .ovh,.ovr{grid-template-columns:38px minmax(112px,1fr) 70px 66px 56px minmax(0,1.45fr) minmax(0,1.45fr)}
+}
+/* 大盤指標格：桌機四欄即可，不要太密 */
+.mkt .grid{gap:8px}
+/* 欄位少的表格（月營收、EPS）不要撐滿整個寬度，表頭與數字一起靠右 */
+.twrap.tnarrow table th:not(:first-child){text-align:right}
+@media(min-width:640px){
+ .twrap.tnarrow{max-width:600px}
+ .twrap.tnarrow.tn3{max-width:440px}
+}

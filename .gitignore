@@ -1,0 +1,11 @@
+COMMIT_MSG.txt
+建立Commit.bat
+發布到GitHub.bat
+排程prompt_本機版.md
+.DS_Store
+Thumbs.db
+
+# 產生器的 Python 快取與原始行情暫存（衍生檔，不需版控）
+__pycache__/
+*.pyc
+tools/data/raw/
