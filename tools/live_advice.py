@@ -200,8 +200,12 @@ html,body{margin:0;padding:0;max-width:100%%;overflow-x:hidden}
 body{background:var(--bg);color:var(--ink);overflow-wrap:break-word;line-height:1.6;
  font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",-apple-system,"Segoe UI",sans-serif;font-size:15px}
 .hd{background:var(--nav);color:#fff;padding:18px 12px 16px}
-.hd h1{margin:0 0 4px;font-size:clamp(19px,5vw,27px)}
+.hd h1{margin:0 0 4px;font-size:clamp(19px,5vw,27px);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.hd .bdg{background:#c07a12;color:#fff;font-size:12px;font-weight:800;border-radius:999px;
+ padding:3px 11px;letter-spacing:.5px}
 .hd p{margin:0;color:#b9c6d6;font-size:clamp(12px,3.3vw,14px)}
+.hd .nb{margin-top:7px;font-size:11.5px;color:#e0c27f;background:rgba(192,122,18,.18);
+ border:1px solid rgba(224,194,127,.35);border-radius:7px;padding:6px 9px;line-height:1.55}
 .wrap{padding:12px;display:grid;gap:10px}
 .k{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 13px}
 .kh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:2px}
@@ -225,8 +229,10 @@ body{background:var(--bg);color:var(--ink);overflow-wrap:break-word;line-height:
 @media(min-width:1000px){.hd,.wrap,.foot,.back{max-width:860px;margin-left:auto;margin-right:auto}}
 </style>
 <header class="hd">
- <h1>盤中即時操作建議</h1>
+ <h1><span class="bdg">⚡ 即時</span>盤中即時操作建議</h1>
  <p>%s · 產生於 %s（台北）· 基礎報告：%s（%s收盤）</p>
+ <div class="nb"><b>這不是收盤報告</b>——本頁只用即時報價對照最新一期報告訂下的買賣區間，
+ <b>不含五面向評分、籌碼、財報與新聞</b>。要看完整分析請回首頁開當日的「台股每日個股觀察報告」。</div>
 </header>
 <div class="wrap">%s</div>
 <a class="back" href="../index.html">← 回總覽首頁</a>
@@ -249,8 +255,9 @@ body{background:var(--bg);color:var(--ink);overflow-wrap:break-word;line-height:
     open(p, "w", encoding="utf-8").write(html)
 
     print("=" * 88)
-    print("盤中即時操作建議｜%s｜產生於 %s" % (state, t0.strftime("%Y/%m/%d %H:%M:%S")))
-    print("基礎報告：%s（%s收盤）" % (C.BASE_DATE, C.BASE_WEEKDAY))
+    print("⚡【即時】盤中即時操作建議（非收盤報告）｜%s｜產生於 %s"
+          % (state, t0.strftime("%Y/%m/%d %H:%M:%S")))
+    print("基礎報告：%s（%s收盤）｜輸出：live/index.html（每次覆蓋）" % (C.BASE_DATE, C.BASE_WEEKDAY))
     print("=" * 88)
     for c in order:
         q = Q.get(c)

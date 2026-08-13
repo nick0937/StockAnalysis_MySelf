@@ -67,7 +67,10 @@ A('<nav class="nav"><ul>'
   '</ul></nav>')
 
 # ══════════════════════════════════════════════ 標題區（精簡：4 格摘要卡＋一行指引）
-A('<header id="top" class="hero"><h1>%s</h1>' % C.TITLE)
+A('<header id="top" class="hero"><h1>'
+  '<span style="display:inline-block;background:#17497f;color:#fff;font-size:12px;font-weight:800;'
+  'border-radius:999px;padding:3px 11px;margin-right:9px;vertical-align:middle;letter-spacing:.5px">'
+  '📊 收盤報告</span>%s</h1>' % C.TITLE)
 A('<div class="meta">'
   '<div><span>資料基準日</span><b>%s（%s收盤）</b></div>'
   '<div><span>產出時間</span><b>%s</b></div>'

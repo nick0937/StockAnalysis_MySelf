@@ -98,7 +98,7 @@ for i, d in enumerate(dirs):
 head = old[:old.find('<a class="big"')]
 foot = old[old.find('<div class="foot">'):]
 open(home_p, "w", encoding="utf-8").write(
-    head + '<a class="big" href="./%s/index.html">閱讀最新一期 · %s/%s/%s</a>\n'
+    head + '<a class="big" href="./%s/index.html">📊 收盤報告 · 閱讀最新一期 · %s/%s/%s</a>\n'
     % (dirs[0], dirs[0][:4], dirs[0][4:6], dirs[0][6:])
     + ' <h2 class="s">歷史報告（%d 期）</h2>\n' % len(dirs)
     + ' <div class="list">' + lst + '</div>\n ' + foot)
