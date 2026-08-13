@@ -8,6 +8,18 @@
   仍維持「續抱並設停利」（一度下修為逢高減碼後又上調回來）。其餘三檔標籤不變，價位依 08/12 均線重算。
 """
 
+# ★ 供 tools/live_advice.py（盤中即時建議）做機械判斷的結構化價位。
+#   每次跑完當日報告後，這幾個數字要與上面的文字區間保持一致。
+#   buy_lo/buy_hi：買進區間（無買點時填 None）
+#   sell_lo/sell_hi：停利／減碼區間
+#   stop：出場（跌破即觸發）  watch：重新評估的關鍵價位（通常是壓在上方的均線）
+LIVE = {
+ "2603": dict(buy_lo=205.0, buy_hi=211.6, sell_lo=215.67, sell_hi=234.5, stop=204.95, watch=None),
+ "2618": dict(buy_lo=40.26, buy_hi=42.35, sell_lo=44.44,  sell_hi=45.65, stop=40.58,  watch=42.35),
+ "1504": dict(buy_lo=None,  buy_hi=None,  sell_lo=69.73,  sell_hi=70.29, stop=66.07,  watch=69.73),
+ "1514": dict(buy_lo=None,  buy_hi=None,  sell_lo=107.81, sell_hi=114.24, stop=101.18, watch=114.24),
+}
+
 ZONE = {
 "2603": dict(
   buy_zone="205.0 – 211.6 元",

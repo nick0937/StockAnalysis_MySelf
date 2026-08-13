@@ -25,6 +25,11 @@ a{color:var(--acc);text-decoration:none}
 .wrap{padding:var(--pad)}
 .big{display:flex;align-items:center;justify-content:center;min-height:52px;background:var(--acc);color:#fff;
  border-radius:var(--r);font-size:clamp(14px,4vw,17px);font-weight:800;margin-bottom:14px;padding:0 14px;text-align:center}
+.live{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;
+ background:#8a5a00;color:#fff;border-radius:var(--r);font-size:clamp(13.5px,3.8vw,16px);
+ font-weight:800;margin-bottom:10px;padding:0 14px;text-align:center;line-height:1.35}
+.live small{display:block;font-weight:600;font-size:11.5px;color:#f0e0c0;margin-top:2px}
+@media(hover:hover){.live:hover{background:#a06a08}}
 h2.s{margin:0 0 9px;font-size:clamp(15px,4.2vw,19px);padding-left:9px;border-left:3px solid var(--acc)}
 .list{display:grid;gap:9px}
 .it{display:grid;gap:3px 10px;min-width:0;background:var(--card);border:1px solid var(--line);
@@ -75,6 +80,7 @@ h2.s{margin:0 0 9px;font-size:clamp(15px,4.2vw,19px);padding-left:9px;border-lef
  <div class="tgs"><span class="tg">1504 東元</span><span class="tg">2618 長榮航</span><span class="tg">1514 亞力</span><span class="tg">2603 長榮</span></div>
 </div></header>
 <div class="wrap">
+ <a class="live" href="./live/index.html"><span>⚡ 盤中即時操作建議<small>抓即時報價對照最新一期的買賣區間 · 每次執行覆蓋</small></span></a>
  <a class="big" href="./20260812/index.html">閱讀最新一期 · 2026/08/12</a>
  <h2 class="s">歷史報告（2 期）</h2>
  <div class="list"><a class="it" href="./20260812/index.html">
