@@ -3,6 +3,7 @@
 
 做什麼：抓即時報價（證交所 MIS）→ 對照最近一期報告訂下的操作區間（inputs/zones.py 的 LIVE）
         → 直接給「空手該不該買、持有該不該賣」，只講操作，不重複收盤報告的細節。
+        ★ 並依 inputs/positions.py 的實際持倉，算出「你這次該動幾張」（守則第 20 節）。
 
 不做什麼：不重算五面向評分、不抓籌碼與財報。盤中資料不足以改變評分，
           真正的評分一律以收盤後的正式報告為準。
@@ -11,13 +12,19 @@
 """
 import json, os, sys, time, urllib.request, datetime
 
+try:                                   # Windows 主控台預設 cp950，印不出 ⚡✅ 等字元
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
 BASE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE)
 sys.path.insert(0, os.path.join(BASE, "inputs"))
 import config as C
 from zones import ZONE, LIVE
 from scores import S, ADV
-from lib import total_score, market_score
+from positions import POS, ADD_BATCH, TRIM_FRAC, AS_OF as POS_AS_OF, SOURCE as POS_SRC
+from lib import total_score, market_score, pl, position_plan, cm, n
 import market as MK
 
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -150,6 +157,52 @@ def judge(code, q, ind):
     return empty, hold, note, tone
 
 
+def my_plan(code, q, vr):
+    """★ 依實際持倉算「這次該動幾張」（守則第 20 節）。回傳 (部位列 HTML, 操作建議 HTML, 純文字)"""
+    p, px = POS.get(code), q["px"]
+    lvv = dict(LIVE[code], _lab=ZONE[code]["sell_lab"])
+    if not p or not p.get("shares"):
+        return ('<div class="pos none">目前無持倉 —— 下方「空手」那一行就是給你看的</div>',
+                '<span class="adv">無持倉，依上方「空手」結論處理</span>', None)
+
+    money = lambda v: ("+" if v > 0 else "") + cm(v)
+    d = pl(p["shares"], p["cost"], px, p.get("div_ps") or 0.0)
+    r = position_plan(px, lvv, p, vr=vr, add_batch=ADD_BATCH, trim_frac=TRIM_FRAC)
+    k = "up" if d["pl"] > 0 else ("dn" if d["pl"] < 0 else "flat")
+    strip = ('<div class="pos"><span>持有 <b>%.0f 張</b></span><span>成本 <b>%s</b></span>'
+             '<span>現值 <b>%s</b></span><span class="%s">未實現 <b>%s 元（%+.2f%%）</b></span></div>'
+             % (d["lots"], n(d["cost"]), cm(d["mkt_val"]), k, money(d["pl"]), d["pl_pct"]))
+
+    nl, lots, be = r["n_lots"], r["lots"], r["breakeven"]
+    if r["act"] == "exit":
+        t = ("<b>出清 %.0f 張（全部）</b> —— 已跌破出場價 %.2f 元；以現價 %.2f 元計，"
+             "這一筆實現 <b>%s 元</b>" % (lots, LIVE[code]["stop"], px, money(r["realized"])))
+    elif r["act"] == "trim":
+        t = ("<b>%s %.0f 張</b>（共 %.0f 張，留 %.0f 張）—— 以現價 %.2f 元計，"
+             "這 %.0f 張實現 <b>%s 元</b>"
+             % ("減碼" if r["in_profit"] else "認賠減碼", lots, nl, nl - lots, px, lots,
+                money(r["realized"])))
+        if not r["in_profit"]:
+            t += "。<b>⚠ 這不是停利</b> —— 現價 %.2f 元低於解套價 %.2f 元" % (px, be)
+    elif r["act"] == "trail":
+        t = ("<b>%.0f 張全數保留，暫不減碼</b> —— 帶量突破（%.2f 倍）比較像趨勢轉強，"
+             "改用移動停利（跌破當日低點 %.2f 元再走）" % (nl, vr or 0, q["low"] or 0))
+    elif r["act"] == "add":
+        t = ("<b>可加碼 %.0f 張</b>，約需 <b>%s 元</b>（加完 %.0f 張，計畫上限 %.0f 張）"
+             % (lots, cm(r["add_cost"]), nl + lots, p["plan_lots"]))
+    else:
+        t = "<b>續抱 %.0f 張，這個價位不動作</b>" % nl
+        if r["state"] == "in_buy":
+            t += ("。現價已進入買進區間，但 <code>positions.py</code> 的 <code>plan_lots</code> 未設上限，"
+                  "本頁不替你決定加幾張")
+    if not r["in_profit"] and px:
+        t += "　·　距解套價 %.2f 元還要漲 %.1f%%" % (be, (be / px - 1) * 100)
+    if r["warn"]:
+        t += '<span class="pw">%s</span>' % r["warn"]
+    return strip, '<span class="adv %s">%s</span>' % (
+        {"exit": "warn", "trim": "warn", "add": "go"}.get(r["act"], ""), t), r
+
+
 def main():
     t0 = now_tpe()
     IND = json.load(open(os.path.join(BASE, "data", "indicators.json"), encoding="utf-8"))
@@ -166,12 +219,19 @@ def main():
     state = ("盤中" if (9 * 60 <= t0.hour * 60 + t0.minute) and mkt_open
              else ("盤前" if mkt_open else "已收盤"))
 
-    cards = []
+    cards, plans, tot_cv, tot_mv = [], {}, 0.0, 0.0
     for c in order:
         q, ind = Q.get(c), IND["stocks"][c]
         if not q:
             continue
         empty, hold, note, tone = judge(c, q, ind)
+        vr = (q["vol"] / ind["v20"]) if (q["vol"] and ind["v20"]) else None
+        strip, act, r = my_plan(c, q, vr)
+        plans[c] = r
+        p = POS.get(c)
+        if p and p.get("shares") and q["px"]:
+            tot_cv += p["shares"] * p["cost"]
+            tot_mv += p["shares"] * q["px"]
         cls = "up" if (q["chg_pct"] or 0) > 0 else ("dn" if (q["chg_pct"] or 0) < 0 else "flat")
         cards.append("""
 <div class="k">
@@ -179,13 +239,28 @@ def main():
   <span class="px %s">%.2f<small>%+.2f%%</small></span>
   <span class="sc">綜合 %d</span></div>
  <div class="st">%s<small>（%s，資料時間 %s）</small></div>
+ %s
  <div class="row"><span class="tag e">空手</span><span class="adv %s">%s</span></div>
  <div class="row"><span class="tag h">持有</span><span class="adv">%s</span></div>
+ <div class="row me"><span class="tag m">你的<br>操作</span>%s</div>
  <div class="base">昨日結論：空手 <b>%s</b>｜持有 <b>%s</b>　·　%s</div>
 </div>""" % (q["name"], c, cls, q["px"] or 0, q["chg_pct"] or 0, TOT[c],
-             note, q["px_src"], q["t"], tone, empty, hold,
+             note, q["px_src"], q["t"], strip, tone, empty, hold, act,
              ADV[c][2], ADV[c][5],
              ("買進 %s" % ZONE[c]["buy_zone"]) + "｜" + ("%s %s" % (ZONE[c]["sell_lab"], ZONE[c]["sell_zone"]))))
+
+    # 投資組合合計（只算有持倉的）
+    tpl_ = tot_mv - tot_cv
+    todo = [(c, plans[c]) for c in order if plans.get(c) and plans[c]["act"] in ("exit", "trim", "add")]
+    sumbar = ('<div class="sum"><div class="sr"><span>投入成本</span><b>%s</b></div>'
+              '<div class="sr"><span>目前市值</span><b>%s</b></div>'
+              '<div class="sr %s"><span>未實現損益</span><b>%s 元（%+.2f%%）</b></div>'
+              '<div class="sr"><span>待處理</span><b>%s</b></div></div>'
+              % (cm(tot_cv), cm(tot_mv),
+                 "up" if tpl_ > 0 else ("dn" if tpl_ < 0 else "flat"),
+                 ("+" if tpl_ > 0 else "") + cm(tpl_),
+                 (tpl_ / tot_cv * 100) if tot_cv else 0.0,
+                 ("%d 檔有動作" % len(todo)) if todo else "無，全部續抱"))
 
     html = """<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -217,10 +292,26 @@ body{background:var(--bg);color:var(--ink);overflow-wrap:break-word;line-height:
 .st{font-size:12.5px;color:var(--ink2);margin-bottom:9px}
 .st small{color:var(--ink3);font-size:11.5px}
 .row{display:grid;grid-template-columns:46px minmax(0,1fr);gap:9px;align-items:start;margin-top:7px}
-.tag{font-size:12px;font-weight:800;border-radius:6px;padding:3px 0;text-align:center;color:#fff}
-.tag.e{background:#17497f}.tag.h{background:#8a5a00}
+.tag{font-size:12px;font-weight:800;border-radius:6px;padding:3px 0;text-align:center;color:#fff;line-height:1.25}
+.tag.e{background:#17497f}.tag.h{background:#8a5a00}.tag.m{background:#1b2534;font-size:11px}
 .adv{font-size:13.5px;color:var(--ink)}
 .adv.go{color:#17497f}.adv.warn{color:#9e3414}.adv.no{color:var(--ink3)}
+.row.me{margin-top:9px;padding-top:9px;border-top:1px solid var(--line)}
+.row.me .adv{font-size:14px}
+.pw{display:block;margin-top:5px;font-size:12px;color:#8a5a00;background:#fff8e6;
+ border:1px solid #e0c27f;border-radius:6px;padding:6px 8px;line-height:1.6}
+.pos{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--ink2);
+ background:#f7f9fc;border:1px solid var(--line);border-radius:7px;padding:7px 9px}
+.pos b{font-variant-numeric:tabular-nums;color:var(--ink)}
+.pos .up b{color:var(--up)}.pos .dn b{color:var(--dn)}
+.pos.none{color:var(--ink3);font-style:normal}
+.sum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);
+ border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:2px}
+.sr{background:var(--card);padding:8px 10px;display:flex;flex-direction:column;gap:1px}
+.sr span{font-size:11px;color:var(--ink3)}
+.sr b{font-size:15px;font-variant-numeric:tabular-nums}
+.sr.up b{color:var(--up)}.sr.dn b{color:var(--dn)}
+@media(min-width:640px){.sum{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .base{margin-top:9px;padding-top:8px;border-top:1px dashed var(--line);font-size:11.5px;color:var(--ink3)}
 .foot{margin:4px 12px 18px;padding:11px 12px;background:#eef1f5;border:1px solid var(--line);
  border-radius:10px;font-size:11.5px;color:var(--ink3);line-height:1.75}
@@ -234,7 +325,12 @@ body{background:var(--bg);color:var(--ink);overflow-wrap:break-word;line-height:
  <div class="nb"><b>這不是收盤報告</b>——本頁只用即時報價對照最新一期報告訂下的買賣區間，
  <b>不含五面向評分、籌碼、財報與新聞</b>。要看完整分析請回首頁開當日的「台股每日個股觀察報告」。</div>
 </header>
-<div class="wrap">%s</div>
+<div class="wrap">%s
+ <p style="margin:0;font-size:11px;color:#7a8798;line-height:1.7">
+ <b>持倉來源</b>：%s（%s）。張數與成本改在 <code>tools/inputs/positions.py</code>，即時頁與每日報告會同步。
+ 「你的操作」的張數是把報告訂好的區間規則（先減 1/3、跌破出場價全出）套到實際張數上的<b>算術結果</b>，
+ 不含新的主觀判斷；成本為券商顯示值，<b>未還原除權息</b>。</p>
+%s</div>
 <a class="back" href="../index.html">← 回總覽首頁</a>
 <div class="foot">
  <p><b>這一頁只回答「現在該怎麼做」</b>：拿最近一期收盤報告訂下的買賣區間與出場價，
@@ -245,9 +341,9 @@ body{background:var(--bg);color:var(--ink);overflow-wrap:break-word;line-height:
  ③本頁每次執行都會覆蓋，顯示的是產生當下的狀態，不會自動更新，請重新執行取得最新。</p>
  <p>本頁由自動化流程彙整公開資訊產生，僅供研究與教育參考，不構成投資建議。投資有風險，過去績效不代表未來表現。</p>
 </div>
-""" % (t0.strftime("%%m/%%d %%H:%%M") if False else t0.strftime("%m/%d %H:%M"),
+""" % (t0.strftime("%m/%d %H:%M"),
        state, t0.strftime("%Y/%m/%d %H:%M:%S"), C.BASE_DATE, C.BASE_WEEKDAY,
-       "".join(cards))
+       sumbar, POS_SRC, POS_AS_OF, "".join(cards))
 
     out_dir = os.path.join(C.REPO, "live")
     os.makedirs(out_dir, exist_ok=True)
@@ -259,15 +355,35 @@ body{background:var(--bg);color:var(--ink);overflow-wrap:break-word;line-height:
           % (state, t0.strftime("%Y/%m/%d %H:%M:%S")))
     print("基礎報告：%s（%s收盤）｜輸出：live/index.html（每次覆蓋）" % (C.BASE_DATE, C.BASE_WEEKDAY))
     print("=" * 88)
+    import re
+
+    def strip(s):                       # HTML → 主控台純文字（警示框另起一行）
+        return re.sub(r"<[^>]+>", "", s.replace('<span class="pw">', "\n      ⚠ "))
+
     for c in order:
         q = Q.get(c)
         if not q:
             continue
-        e, h, note, _ = judge(c, q, IND["stocks"][c])
-        strip = lambda s: s.replace("<b>", "").replace("</b>", "")
+        ind = IND["stocks"][c]
+        e, h, note, _ = judge(c, q, ind)
+        vr = (q["vol"] / ind["v20"]) if (q["vol"] and ind["v20"]) else None
+        _, act, r = my_plan(c, q, vr)
         print("\n%s %s  %.2f (%+.2f%%)  %s" % (c, q["name"], q["px"] or 0, q["chg_pct"] or 0, note))
+        if r:
+            d = pl(POS[c]["shares"], POS[c]["cost"], q["px"], POS[c].get("div_ps") or 0.0)
+            print("   部位：%.0f 張 · 成本 %.2f · 現值 %s · 未實現 %s（%+.2f%%）"
+                  % (d["lots"], d["cost"], cm(d["mkt_val"]),
+                     ("+" if d["pl"] > 0 else "") + cm(d["pl"]), d["pl_pct"]))
         print("   空手：%s" % strip(e))
         print("   持有：%s" % strip(h))
+        print("   ★ 你的操作：%s" % strip(act))
+    print("\n" + "-" * 88)
+    print("投資組合：投入 %s ｜ 市值 %s ｜ 未實現 %s 元（%+.2f%%）｜ 待處理 %s"
+          % (cm(tot_cv), cm(tot_mv), ("+" if tpl_ > 0 else "") + cm(tpl_),
+             (tpl_ / tot_cv * 100) if tot_cv else 0.0,
+             "、".join("%s %s %.0f 張" % (c, plans[c]["title"], plans[c]["lots"]) for c, _ in todo)
+             or "無，全部續抱"))
+    print("持倉來源：%s（%s）——買賣後請改 tools/inputs/positions.py" % (POS_SRC, POS_AS_OF))
     print("\n已寫入 %s（%d 字元）" % (p, len(html)))
 
 

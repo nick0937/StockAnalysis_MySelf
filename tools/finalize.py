@@ -53,7 +53,9 @@ for tag, want in [('id="market"', 1), ('id="overview"', 1), ('id="advice"', 1),
                   ('<h3 class="sh">月營收（近 %d 個月）</h3>' % C.N_MONTHLY, NE),
                   ('<h3 class="sh">每股盈餘（近 %d 季）</h3>' % C.N_EPS, NE),
                   ('<h3 class="sh">大戶籌碼（近 %d 週，約 3 個月）</h3>' % C.N_CONC, NE),
-                  ('class="o-ev"', NE + 1), ('class="o-hv"', NE + 1)]:
+                  ('class="o-ev"', NE + 1), ('class="o-hv"', NE + 1),
+                  ('<h3 class="sh">你的部位｜操作建議</h3>', NE),   # 守則第 20 節
+                  ('<h3 class="sh">你的持倉｜這一天該動的張數</h3>', 1)]:
     got = H.count(tag)
     print("    %-52s %d（預期 %d）%s" % (tag[:52], got, want, "OK" if got == want else "★"))
 

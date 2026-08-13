@@ -130,6 +130,105 @@ def chip(cls_, sym, label, big=False):
             % (cls_, " big" if big else "", sym, label))
 
 
+# ══════════════════════════════════════════════════════════════════
+# 實際持倉的操作建議（守則第 20 節）
+# ★ 純算術：把 zones.py 已訂好的區間規則套到 inputs/positions.py 的實際張數上。
+#   這裡不做任何新的主觀判斷，也不改雙情境標籤。
+# ══════════════════════════════════════════════════════════════════
+LOT = 1000          # 1 張 = 1000 股
+
+
+def pl(shares, cost, px, div_ps=0.0):
+    """未實現損益。回傳 dict：投入成本／現值／損益金額／報酬率／還原股利後報酬率"""
+    if not shares or not cost or px is None:
+        return None
+    cv, mv = shares * cost, shares * px
+    d = {"lots": shares / float(LOT), "cost": cost, "px": px,
+         "cost_val": cv, "mkt_val": mv, "pl": mv - cv, "pl_pct": (px / cost - 1) * 100,
+         "breakeven": cost}
+    if div_ps:
+        d["pl_adj"] = (mv - cv) + shares * div_ps
+        d["pl_adj_pct"] = ((px + div_ps) / cost - 1) * 100
+        d["breakeven"] = cost - div_ps
+    return d
+
+
+def zone_state(px, lv):
+    """現價落在 LIVE 區間的哪一段。優先序：出場價 > 停利/減碼 > 買進 > 續抱
+
+    below_stop 跌破出場價｜above_sell 高於停利上緣｜in_sell 停利/減碼區間內
+    in_buy 買進區間內｜below_buy 跌破買進區間下緣｜hold 其餘（區間之間）
+    """
+    if px is None:
+        return None
+    if lv.get("stop") and px < lv["stop"]:
+        return "below_stop"
+    if lv.get("sell_hi") and px > lv["sell_hi"]:
+        return "above_sell"
+    if lv.get("sell_lo") and px >= lv["sell_lo"]:
+        return "in_sell"
+    if lv.get("buy_lo") and lv.get("buy_hi"):
+        if px < lv["buy_lo"]:
+            return "below_buy"
+        if px <= lv["buy_hi"]:
+            return "in_buy"
+    return "hold"
+
+
+def trim_lots(total_lots, frac=1.0 / 3.0):
+    """分批減碼張數＝半進位(總張數 × frac)，至少 1 張、至多全部"""
+    return max(1, min(int(total_lots), half_up(total_lots * frac)))
+
+
+def position_plan(px, lv, p, vr=None, add_batch=1, trim_frac=1.0 / 3.0):
+    """★ 守則第 20.2 節的規則表。回傳 dict 或 None（無持倉）
+
+    act:  exit 出清｜trim 減碼｜trail 改移動停利｜add 加碼｜keep 續抱
+    lots: 這次該動的張數（keep/trail 為 0）
+    realized: 若真的動了這些張數，會實現多少損益（元）
+    """
+    if not p or not p.get("shares"):
+        return None
+    n_lots = p["shares"] / float(LOT)
+    cost, div_ps = p["cost"], p.get("div_ps") or 0.0
+    be = cost - div_ps                       # 解套價（還原已領股利）
+    st = zone_state(px, lv)
+    up = px is not None and px >= be         # 這一筆是賺是賠
+    plan = p.get("plan_lots")
+    r = {"state": st, "lots": 0.0, "n_lots": n_lots, "breakeven": be,
+         "in_profit": up, "act": "keep", "warn": None}
+
+    if st == "below_stop":
+        r["act"], r["lots"] = "exit", n_lots
+        r["title"] = "觸發出場" if up else "觸發停損"
+    elif st == "above_sell" and vr is not None and vr >= 1.5:
+        r["act"], r["title"] = "trail", "改移動停利"
+    elif st in ("above_sell", "in_sell"):
+        r["act"], r["lots"] = "trim", trim_lots(n_lots, trim_frac)
+        r["title"] = "分批停利" if up else "分批減碼（認賠）"
+    elif st == "in_buy":
+        if plan and plan > n_lots:
+            r["act"], r["lots"] = "add", min(add_batch, plan - n_lots)
+            r["title"] = "可加碼"
+        else:
+            r["title"] = "進入買進區間（未設計畫上限，不產生加碼張數）"
+    else:
+        r["title"] = "續抱"
+
+    if px is not None:
+        r["realized"] = (px - cost) * r["lots"] * LOT if r["act"] in ("exit", "trim") else 0.0
+        r["add_cost"] = px * r["lots"] * LOT if r["act"] == "add" else 0.0
+
+    # 機械檢查：區間與成本／出場價的位置關係（純數字比較，不是判斷）
+    if lv.get("sell_hi") and be > lv["sell_hi"]:
+        r["warn"] = ("解套價 %.2f 元高於%s上緣 %.2f 元 —— <b>這一檔的減碼區間全數低於成本，"
+                     "任何在區間內的動作都是認賠，不是停利</b>" % (be, lv.get("_lab", "停利區間"), lv["sell_hi"]))
+    elif lv.get("buy_lo") and lv.get("stop") and lv["buy_lo"] < lv["stop"] <= (lv.get("buy_hi") or 0):
+        r["warn"] = ("買進區間下緣 %.2f 元<b>低於</b>出場價 %.2f 元 —— 區間內的加碼與持有的出場條件"
+                     "互相矛盾，加碼前先確認站穩 %.2f 元" % (lv["buy_lo"], lv["stop"], lv["stop"]))
+    return r
+
+
 def opbox(zone_lab, zone, anchor, cond_lab, cond):
     """★ 操作條件盒：價位區間 + 錨點來源 + 觸發條件（守則第 10 節）"""
     return ('<div class="opbox"><span class="aol">%s</span>'

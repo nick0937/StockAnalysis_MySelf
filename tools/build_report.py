@@ -20,10 +20,12 @@ sys.path.insert(0, BASE)
 sys.path.insert(0, os.path.join(BASE, "inputs"))
 import config as C
 from lib import (n, cm, sgn, cls, num_td, band_of, scls, total_score, market_score,
-                 spark, mc, twrap, mabar, chip, opbox, MA_LABEL)
+                 spark, mc, twrap, mabar, chip, opbox, pl, position_plan, MA_LABEL)
 import market as MK
 from scores import S, FUND, ADV
-from zones import ZONE
+from zones import ZONE, LIVE
+from positions import (POS, ADD_BATCH, TRIM_FRAC,
+                       AS_OF as POS_AS_OF, SOURCE as POS_SRC)
 from shorts import EMPTY_S, HOLD_S, OPS_S, TGT_S
 from monthly import MONTHLY, MNOTE
 from chips import out as CHIP
@@ -43,6 +45,74 @@ for c in C.CODES:
     S[c] = (S[c][0], S[c][1], S[c][2], market_score(MK.ENV_SCORE, rs), S[c][4])
 TOT = {c: total_score(S[c]) for c in C.CODES}
 RANK = sorted(C.CODES, key=lambda c: -TOT[c])
+
+
+# ── ★ 實際持倉的操作建議（守則第 20 節）────────────────────────────
+#    純算術：把 ZONE/LIVE 已訂好的區間規則套到 inputs/positions.py 的實際張數上。
+#    收盤價一律用當日收盤（IND），量比用 vr20（對 20 日均量）。
+def money(v):
+    return ("+" if v > 0 else "") + cm(v)
+
+
+PLAN, PL = {}, {}
+for c in C.CODES:
+    p = POS.get(c)
+    if not p or not p.get("shares"):
+        PLAN[c] = PL[c] = None
+        continue
+    px = IND["stocks"][c]["close"]
+    PL[c] = pl(p["shares"], p["cost"], px, p.get("div_ps") or 0.0)
+    PLAN[c] = position_plan(px, dict(LIVE[c], _lab=ZONE[c]["sell_lab"]), p,
+                            vr=IND["stocks"][c].get("vr20"),
+                            add_batch=ADD_BATCH, trim_frac=TRIM_FRAC)
+
+POS_CV = sum(PL[c]["cost_val"] for c in C.CODES if PL[c])
+POS_MV = sum(PL[c]["mkt_val"] for c in C.CODES if PL[c])
+POS_PL = POS_MV - POS_CV
+
+
+def posblock(c):
+    """個股卡片內的「你的部位｜操作建議」區塊"""
+    d, r = PL[c], PLAN[c]
+    if not d:
+        return ('<div class="posb none"><b>目前無持倉</b>——上方「空手時」那一欄就是給你看的，'
+                '買進後請更新 <code>tools/inputs/positions.py</code>。</div>')
+    px, nl, lots, be = d["px"], r["n_lots"], r["lots"], r["breakeven"]
+    if r["act"] == "exit":
+        act = ('<b>出清 %.0f 張（全部）</b>——收盤 %s 元已跌破出場價 %.2f 元；'
+               '照這個價位計，這一筆實現 <b>%s 元</b>' % (lots, n(px), LIVE[c]["stop"], money(r["realized"])))
+    elif r["act"] == "trim":
+        act = ('<b>%s %.0f 張</b>（共 %.0f 張，留 %.0f 張）——照收盤 %s 元計，這 %.0f 張實現 <b>%s 元</b>'
+               % ("減碼" if r["in_profit"] else "認賠減碼", lots, nl, nl - lots, n(px), lots,
+                  money(r["realized"])))
+        if not r["in_profit"]:
+            act += '。<b>⚠ 這不是停利</b>——收盤 %s 元低於解套價 %.2f 元' % (n(px), be)
+    elif r["act"] == "trail":
+        act = ('<b>%.0f 張全數保留，暫不減碼</b>——量比 %.2f 倍的突破比較像趨勢轉強而非反彈，'
+               '改用移動停利（跌破當日低點 %s 元再走）'
+               % (nl, IND["stocks"][c].get("vr20") or 0, n(IND["stocks"][c]["low"])))
+    elif r["act"] == "add":
+        act = ('<b>可加碼 %.0f 張</b>，約需 <b>%s 元</b>（加完 %.0f 張，計畫上限 %.0f 張）'
+               % (lots, cm(r["add_cost"]), nl + lots, POS[c]["plan_lots"]))
+    else:
+        act = '<b>續抱 %.0f 張，這個價位不動作</b>' % nl
+        if r["state"] == "in_buy":
+            act += ('。收盤已在買進區間內，但 <code>positions.py</code> 的 <code>plan_lots</code> '
+                    '未設上限，本報告不替你決定加幾張')
+    if not r["in_profit"]:
+        act += '　·　距解套價 %.2f 元還要漲 %.1f%%' % (be, (be / px - 1) * 100)
+    k = cls(d["pl"])
+    return ('<div class="posb"><div class="posm">'
+            '<div><span>持有</span><b>%.0f 張</b></div>'
+            '<div><span>每股成本</span><b>%s</b></div>'
+            '<div><span>投入成本</span><b>%s</b></div>'
+            '<div><span>目前市值</span><b>%s</b></div>'
+            '<div class="%s"><span>未實現損益</span><b>%s</b></div>'
+            '<div class="%s"><span>報酬率</span><b>%s</b></div></div>'
+            '<div class="posa"><span class="posl">這一檔該怎麼動</span><p>%s</p></div>%s</div>'
+            % (d["lots"], n(d["cost"]), cm(d["cost_val"]), cm(d["mkt_val"]),
+               k, money(d["pl"]), k, sgn(d["pl_pct"], 2, True), act,
+               ('<p class="posw">%s</p>' % r["warn"]) if r["warn"] else ""))
 
 O = []
 A = O.append
@@ -365,6 +435,10 @@ for c in RANK:
          opbox(z["sell_lab"], z["sell_zone"], z["sell_anchor"], "出場觸發", z["sell_cond"]),
          HOLD_S[c]))
 
+    # 11b ★ 你的部位（依 inputs/positions.py 的實際張數與成本，守則第 20 節）
+    A('<h3 class="sh">你的部位｜操作建議</h3>')
+    A(posblock(c))
+
     # 12 操作參考
     A('<h3 class="sh">操作參考（價位）</h3><p class="para ops">%s</p>' % OPS_S[c])
     A('<a class="top" href="#top">↑ 回頂端</a></section>')
@@ -390,6 +464,36 @@ A('<p class="tnote"><b>分數建議與情境建議的差別</b>：分數建議�
   '回答「這家公司整體好不好」；情境建議回答兩個完全不同的操作問題——'
   '空手看「現在這個價位的風險報酬比」，持有看「機會成本與時間壓力」。'
   '<b>兩者不一致是常態而非錯誤。</b></p>')
+
+A('<h3 class="sh">你的持倉｜這一天該動的張數</h3>')
+prow = ""
+for c in RANK:
+    d, r = PL[c], PLAN[c]
+    if not d:
+        prow += ('<tr><td>%s<em>%s</em></td><td class="num">--</td><td class="num">--</td>'
+                 '<td class="num">--</td><td class="num">--</td><td>無持倉</td></tr>'
+                 % (IND["stocks"][c]["name"], c))
+        continue
+    doit = ("%s <b>%.0f 張</b>" % (r["title"], r["lots"])) if r["lots"] else r["title"]
+    prow += ('<tr><td>%s<em>%s</em></td><td class="num">%.0f</td><td class="num">%s</td>'
+             '<td class="num">%s</td><td class="num %s">%s<br><small>%s</small></td>'
+             '<td>%s</td></tr>'
+             % (IND["stocks"][c]["name"], c, d["lots"], n(d["cost"]), cm(d["mkt_val"]),
+                cls(d["pl"]), money(d["pl"]), sgn(d["pl_pct"], 2, True), doit))
+prow += ('<tr class="ptot"><td>合計</td><td class="num">--</td><td class="num">--</td>'
+         '<td class="num">%s</td><td class="num %s">%s<br><small>%s</small></td>'
+         '<td>投入成本 %s 元</td></tr>'
+         % (cm(POS_MV), cls(POS_PL), money(POS_PL),
+            sgn(POS_PL / POS_CV * 100, 2, True) if POS_CV else "--", cm(POS_CV)))
+A(twrap('<table><thead><tr><th>個股</th><th>張數</th><th>每股成本</th><th>市值</th>'
+        '<th>未實現損益</th><th>依規則該動的張數</th></tr></thead><tbody>%s</tbody></table>' % prow))
+A('<p class="tnote"><b>張數怎麼來的</b>：把本報告「已持有」欄訂下的區間規則'
+  '（跌破出場價全出、進入減碼／停利區間先減 1/3、帶量突破上緣改移動停利）'
+  '直接套到 <code>tools/inputs/positions.py</code> 的實際張數，<b>是算術結果，不是另外一套判斷</b>。'
+  '加碼張數要在 <code>positions.py</code> 填 <code>plan_lots</code>（計畫上限張數）才會產生——'
+  '部位大小屬於資金配置，程式不代為決定。'
+  '持倉來源：%s（%s）；每股成本為券商顯示值，<b>未還原除權息</b>，'
+  '若持有期間已領到股利，填 <code>div_ps</code> 可另算還原後的實質報酬。</p>' % (POS_SRC, POS_AS_OF))
 
 A('<h3 class="sh">依綜合分數分組</h3>')
 grp = {}

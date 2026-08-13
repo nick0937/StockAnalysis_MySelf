@@ -317,6 +317,26 @@ td.desc{white-space:normal;min-width:230px;font-size:12px;color:var(--ink2);line
  .o-vd{align-items:flex-end}
 }
 
+/* ── 你的部位｜操作建議（守則第 20 節）── */
+.posb{border:1px solid var(--line);border-left:3px solid var(--nav);border-radius:8px;
+ background:#fafbfd;padding:10px 12px;min-width:0}
+.posb.none{color:var(--ink3);font-size:13px;border-left-color:var(--line)}
+.posb code{background:#eef1f5;border-radius:4px;padding:1px 5px;font-size:11.5px}
+.posm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);
+ border:1px solid var(--line);border-radius:7px;overflow:hidden;margin-bottom:9px}
+.posm>div{background:#fff;padding:6px 9px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.posm span{font-size:10.5px;color:var(--ink3)}
+.posm b{font-size:14px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.posm .up b{color:var(--up)}.posm .dn b{color:var(--dn)}
+.posl{display:inline-block;background:var(--nav);color:#fff;border-radius:5px;padding:2px 9px;
+ font-size:11px;font-weight:700;margin-bottom:5px}
+.posa p{margin:0;font-size:13.5px;line-height:1.8}
+.posw{margin:8px 0 0;font-size:12.5px;line-height:1.7;color:#6b4c00;background:#fff8e6;
+ border:1px solid #f0dfb0;border-radius:6px;padding:7px 9px}
+tr.ptot td{background:#f2f5f9;font-weight:700}
+@media(min-width:640px){.posm{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:900px){.posm{grid-template-columns:repeat(6,minmax(0,1fr))}}
+
 /* ══ 建議標籤系統：視覺重量 = 行動急迫性 ══ */
 .chip{display:inline-flex;align-items:center;gap:5px;border-radius:6px;padding:3px 9px;
  font-size:11.5px;font-weight:700;white-space:nowrap;border:1.5px solid transparent;line-height:1.5}
