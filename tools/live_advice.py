@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.join(BASE, "inputs"))
 import config as C
 from zones import ZONE, LIVE
 from scores import S, ADV
-from positions import POS, ADD_BATCH, TRIM_FRAC, AS_OF as POS_AS_OF, SOURCE as POS_SRC
+from positions import POS, TRIM_FRAC, AS_OF as POS_AS_OF, SOURCE as POS_SRC
 from lib import total_score, market_score, pl, position_plan, cm, n
 import market as MK
 
@@ -167,7 +167,7 @@ def my_plan(code, q, vr):
 
     money = lambda v: ("+" if v > 0 else "") + cm(v)
     d = pl(p["shares"], p["cost"], px, p.get("div_ps") or 0.0)
-    r = position_plan(px, lvv, p, vr=vr, add_batch=ADD_BATCH, trim_frac=TRIM_FRAC)
+    r = position_plan(px, lvv, p, vr=vr, trim_frac=TRIM_FRAC)
     k = "up" if d["pl"] > 0 else ("dn" if d["pl"] < 0 else "flat")
     strip = ('<div class="pos"><span>持有 <b>%.0f 張</b></span><span>成本 <b>%s</b></span>'
              '<span>現值 <b>%s</b></span><span class="%s">未實現 <b>%s 元（%+.2f%%）</b></span></div>'
@@ -175,32 +175,25 @@ def my_plan(code, q, vr):
 
     nl, lots, be = r["n_lots"], r["lots"], r["breakeven"]
     if r["act"] == "exit":
-        t = ("<b>出清 %.0f 張（全部）</b> —— 已跌破出場價 %.2f 元；以現價 %.2f 元計，"
-             "這一筆實現 <b>%s 元</b>" % (lots, LIVE[code]["stop"], px, money(r["realized"])))
+        t = ("上方結論＝出場，換算成 <b>%.0f 張（全部）</b>；以現價 %.2f 元計，"
+             "這一筆實現 <b>%s 元</b>" % (lots, px, money(r["realized"])))
     elif r["act"] == "trim":
-        t = ("<b>%s %.0f 張</b>（共 %.0f 張，留 %.0f 張）—— 以現價 %.2f 元計，"
-             "這 %.0f 張實現 <b>%s 元</b>"
-             % ("減碼" if r["in_profit"] else "認賠減碼", lots, nl, nl - lots, px, lots,
-                money(r["realized"])))
-        if not r["in_profit"]:
-            t += "。<b>⚠ 這不是停利</b> —— 現價 %.2f 元低於解套價 %.2f 元" % (px, be)
+        t = ("上方結論＝%s，換算成 <b>%.0f 張</b>（共 %.0f 張，留 %.0f 張）；"
+             "以現價 %.2f 元計，這 %.0f 張實現 <b>%s 元</b>"
+             % (r["title"], lots, nl, nl - lots, px, lots, money(r["realized"])))
     elif r["act"] == "trail":
-        t = ("<b>%.0f 張全數保留，暫不減碼</b> —— 帶量突破（%.2f 倍）比較像趨勢轉強，"
-             "改用移動停利（跌破當日低點 %.2f 元再走）" % (nl, vr or 0, q["low"] or 0))
-    elif r["act"] == "add":
-        t = ("<b>可加碼 %.0f 張</b>，約需 <b>%s 元</b>（加完 %.0f 張，計畫上限 %.0f 張）"
-             % (lots, cm(r["add_cost"]), nl + lots, p["plan_lots"]))
+        t = "上方結論＝改移動停利，<b>%.0f 張全數保留</b>，這個價位不減" % nl
+    elif r["act"] == "addzone":
+        t = ("上方結論＝可買進，<b>現價在加碼區間 %.2f – %.2f 元內</b>"
+             "（每 1 張約需 <b>%s 元</b>）；<b>加幾張由你自己決定</b>，本頁不算張數。"
+             "手上已有 %.0f 張" % (r["buy_lo"], r["buy_hi"], cm(r["unit"]), nl))
     else:
-        t = "<b>續抱 %.0f 張，這個價位不動作</b>" % nl
-        if r["state"] == "in_buy":
-            t += ("。現價已進入買進區間，但 <code>positions.py</code> 的 <code>plan_lots</code> 未設上限，"
-                  "本頁不替你決定加幾張")
+        t = "上方結論＝續抱，<b>%.0f 張不動</b>" % nl
     if not r["in_profit"] and px:
         t += "　·　距解套價 %.2f 元還要漲 %.1f%%" % (be, (be / px - 1) * 100)
-    if r["warn"]:
-        t += '<span class="pw">%s</span>' % r["warn"]
-    return strip, '<span class="adv %s">%s</span>' % (
-        {"exit": "warn", "trim": "warn", "add": "go"}.get(r["act"], ""), t), r
+    if r["note"]:
+        t += '<span class="pw">%s</span>' % r["note"]
+    return strip, '<span class="adv">%s</span>' % t, r
 
 
 def main():
@@ -242,7 +235,7 @@ def main():
  %s
  <div class="row"><span class="tag e">空手</span><span class="adv %s">%s</span></div>
  <div class="row"><span class="tag h">持有</span><span class="adv">%s</span></div>
- <div class="row me"><span class="tag m">你的<br>操作</span>%s</div>
+ <div class="row me"><span class="tag m">換算<br>張數</span>%s</div>
  <div class="base">昨日結論：空手 <b>%s</b>｜持有 <b>%s</b>　·　%s</div>
 </div>""" % (q["name"], c, cls, q["px"] or 0, q["chg_pct"] or 0, TOT[c],
              note, q["px_src"], q["t"], strip, tone, empty, hold, act,
@@ -251,11 +244,11 @@ def main():
 
     # 投資組合合計（只算有持倉的）
     tpl_ = tot_mv - tot_cv
-    todo = [(c, plans[c]) for c in order if plans.get(c) and plans[c]["act"] in ("exit", "trim", "add")]
+    todo = [(c, plans[c]) for c in order if plans.get(c) and plans[c]["act"] in ("exit", "trim")]
     sumbar = ('<div class="sum"><div class="sr"><span>投入成本</span><b>%s</b></div>'
               '<div class="sr"><span>目前市值</span><b>%s</b></div>'
               '<div class="sr %s"><span>未實現損益</span><b>%s 元（%+.2f%%）</b></div>'
-              '<div class="sr"><span>待處理</span><b>%s</b></div></div>'
+              '<div class="sr"><span>有動作的檔數</span><b>%s</b></div></div>'
               % (cm(tot_cv), cm(tot_mv),
                  "up" if tpl_ > 0 else ("dn" if tpl_ < 0 else "flat"),
                  ("+" if tpl_ > 0 else "") + cm(tpl_),
@@ -328,8 +321,10 @@ body{background:var(--bg);color:var(--ink);overflow-wrap:break-word;line-height:
 <div class="wrap">%s
  <p style="margin:0;font-size:11px;color:#7a8798;line-height:1.7">
  <b>持倉來源</b>：%s（%s）。張數與成本改在 <code>tools/inputs/positions.py</code>，即時頁與每日報告會同步。
- 「你的操作」的張數是把報告訂好的區間規則（先減 1/3、跌破出場價全出）套到實際張數上的<b>算術結果</b>，
- 不含新的主觀判斷；成本為券商顯示值，<b>未還原除權息</b>。</p>
+ <b>持倉不會改變「空手」與「持有」的結論</b> —— 那兩行完全照舊，只依報價與報告訂下的區間判斷；
+ 「換算張數」只是把同一個結論換算成你的張數與金額（先減 1/3、跌破出場價全出）。
+ <b>加碼張數一律不算</b>，只告訴你區間端點與每 1 張的金額，加幾張你自己決定。
+ 成本為券商顯示值，<b>未還原除權息</b>。</p>
 %s</div>
 <a class="back" href="../index.html">← 回總覽首頁</a>
 <div class="foot">
@@ -376,7 +371,7 @@ body{background:var(--bg);color:var(--ink);overflow-wrap:break-word;line-height:
                      ("+" if d["pl"] > 0 else "") + cm(d["pl"]), d["pl_pct"]))
         print("   空手：%s" % strip(e))
         print("   持有：%s" % strip(h))
-        print("   ★ 你的操作：%s" % strip(act))
+        print("   換算：%s" % strip(act))
     print("\n" + "-" * 88)
     print("投資組合：投入 %s ｜ 市值 %s ｜ 未實現 %s 元（%+.2f%%）｜ 待處理 %s"
           % (cm(tot_cv), cm(tot_mv), ("+" if tpl_ > 0 else "") + cm(tpl_),

@@ -180,52 +180,55 @@ def trim_lots(total_lots, frac=1.0 / 3.0):
     return max(1, min(int(total_lots), half_up(total_lots * frac)))
 
 
-def position_plan(px, lv, p, vr=None, add_batch=1, trim_frac=1.0 / 3.0):
-    """★ 守則第 20.2 節的規則表。回傳 dict 或 None（無持倉）
+def position_plan(px, lv, p, vr=None, trim_frac=1.0 / 3.0):
+    """★ 守則第 20.2 節：把「已持有」欄的結論**換算成張數**。回傳 dict 或 None（無持倉）
 
-    act:  exit 出清｜trim 減碼｜trail 改移動停利｜add 加碼｜keep 續抱
-    lots: 這次該動的張數（keep/trail 為 0）
-    realized: 若真的動了這些張數，會實現多少損益（元）
+    ⚠ 這裡不產生新的結論，也不改寫「空手／持有」的措辭 ——
+      動作與用語一律沿用 zones.py 訂好的那一套（停利就是停利、減碼就是減碼），
+      持倉只決定「那個動作換算成幾張、多少錢」。
+
+    act:  exit 出場｜trim 減碼／停利｜trail 改移動停利｜addzone 在加碼區間內｜keep 續抱
+    lots: 換算後的張數（keep/trail/addzone 為 0）
+    realized: 若真的動了這些張數，以現價計會實現多少損益（元）
+    note: 成本與區間的位置對照（純數字比較的事實，**不改變上方結論**）
+
+    ★ 加碼張數一律不算：只回報區間端點與每 1 張的金額（unit），加幾張由使用者自己決定。
     """
     if not p or not p.get("shares"):
         return None
     n_lots = p["shares"] / float(LOT)
     cost, div_ps = p["cost"], p.get("div_ps") or 0.0
     be = cost - div_ps                       # 解套價（還原已領股利）
+    lab = (lv.get("_lab") or "停利區間").replace("區間", "")   # 停利 / 減碼，沿用報告用語
     st = zone_state(px, lv)
-    up = px is not None and px >= be         # 這一筆是賺是賠
-    plan = p.get("plan_lots")
+    up = px is not None and px >= be         # 這一筆是賺是賠（只影響金額，不影響動作）
     r = {"state": st, "lots": 0.0, "n_lots": n_lots, "breakeven": be,
-         "in_profit": up, "act": "keep", "warn": None}
+         "in_profit": up, "act": "keep", "note": None,
+         "unit": (px * LOT) if px else None}   # 每 1 張要多少錢（給使用者自己決定張數用）
 
     if st == "below_stop":
-        r["act"], r["lots"] = "exit", n_lots
-        r["title"] = "觸發出場" if up else "觸發停損"
+        r["act"], r["lots"], r["title"] = "exit", n_lots, "出場"
     elif st == "above_sell" and vr is not None and vr >= 1.5:
         r["act"], r["title"] = "trail", "改移動停利"
     elif st in ("above_sell", "in_sell"):
         r["act"], r["lots"] = "trim", trim_lots(n_lots, trim_frac)
-        r["title"] = "分批停利" if up else "分批減碼（認賠）"
+        r["title"] = "分批%s" % lab
     elif st == "in_buy":
-        if plan and plan > n_lots:
-            r["act"], r["lots"] = "add", min(add_batch, plan - n_lots)
-            r["title"] = "可加碼"
-        else:
-            r["title"] = "進入買進區間（未設計畫上限，不產生加碼張數）"
+        r["act"], r["title"] = "addzone", "在加碼區間內"
+        r["buy_lo"], r["buy_hi"] = lv["buy_lo"], lv["buy_hi"]
     else:
         r["title"] = "續抱"
 
     if px is not None:
         r["realized"] = (px - cost) * r["lots"] * LOT if r["act"] in ("exit", "trim") else 0.0
-        r["add_cost"] = px * r["lots"] * LOT if r["act"] == "add" else 0.0
 
-    # 機械檢查：區間與成本／出場價的位置關係（純數字比較，不是判斷）
+    # 成本對照（純數字比較的事實陳述，不是新的建議，也不改變上方結論）
     if lv.get("sell_hi") and be > lv["sell_hi"]:
-        r["warn"] = ("解套價 %.2f 元高於%s上緣 %.2f 元 —— <b>這一檔的減碼區間全數低於成本，"
-                     "任何在區間內的動作都是認賠，不是停利</b>" % (be, lv.get("_lab", "停利區間"), lv["sell_hi"]))
+        r["note"] = ("成本對照：解套價 %.2f 元高於%s上緣 %.2f 元 —— "
+                     "在這個區間執行會實現虧損，金額如上。" % (be, lab, lv["sell_hi"]))
     elif lv.get("buy_lo") and lv.get("stop") and lv["buy_lo"] < lv["stop"] <= (lv.get("buy_hi") or 0):
-        r["warn"] = ("買進區間下緣 %.2f 元<b>低於</b>出場價 %.2f 元 —— 區間內的加碼與持有的出場條件"
-                     "互相矛盾，加碼前先確認站穩 %.2f 元" % (lv["buy_lo"], lv["stop"], lv["stop"]))
+        r["note"] = ("價位對照：買進區間下緣 %.2f 元低於出場價 %.2f 元，兩者重疊。"
+                     % (lv["buy_lo"], lv["stop"]))
     return r
 
 

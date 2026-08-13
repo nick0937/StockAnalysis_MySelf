@@ -1,7 +1,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<title>盤中即時操作建議 · 08/13 12:22</title>
+<title>盤中即時操作建議 · 08/13 12:41</title>
 <style>
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -57,58 +57,60 @@ body{background:var(--bg);color:var(--ink);overflow-wrap:break-word;line-height:
 </style>
 <header class="hd">
  <h1><span class="bdg">⚡ 即時</span>盤中即時操作建議</h1>
- <p>盤中 · 產生於 2026/08/13 12:22:43（台北）· 基礎報告：2026-08-12（週三收盤）</p>
+ <p>盤中 · 產生於 2026/08/13 12:41:03（台北）· 基礎報告：2026-08-12（週三收盤）</p>
  <div class="nb"><b>這不是收盤報告</b>——本頁只用即時報價對照最新一期報告訂下的買賣區間，
  <b>不含五面向評分、籌碼、財報與新聞</b>。要看完整分析請回首頁開當日的「台股每日個股觀察報告」。</div>
 </header>
-<div class="wrap"><div class="sum"><div class="sr"><span>投入成本</span><b>665,950</b></div><div class="sr"><span>目前市值</span><b>663,600</b></div><div class="sr dn"><span>未實現損益</span><b>-2,350 元（-0.35%）</b></div><div class="sr"><span>待處理</span><b>無，全部續抱</b></div></div>
+<div class="wrap"><div class="sum"><div class="sr"><span>投入成本</span><b>665,950</b></div><div class="sr"><span>目前市值</span><b>663,550</b></div><div class="sr dn"><span>未實現損益</span><b>-2,400 元（-0.36%）</b></div><div class="sr"><span>有動作的檔數</span><b>無，全部續抱</b></div></div>
  <p style="margin:0;font-size:11px;color:#7a8798;line-height:1.7">
  <b>持倉來源</b>：券商 App 持股頁（每股平均成本，未還原除權息）（2026-08-13）。張數與成本改在 <code>tools/inputs/positions.py</code>，即時頁與每日報告會同步。
- 「你的操作」的張數是把報告訂好的區間規則（先減 1/3、跌破出場價全出）套到實際張數上的<b>算術結果</b>，
- 不含新的主觀判斷；成本為券商顯示值，<b>未還原除權息</b>。</p>
+ <b>持倉不會改變「空手」與「持有」的結論</b> —— 那兩行完全照舊，只依報價與報告訂下的區間判斷；
+ 「換算張數」只是把同一個結論換算成你的張數與金額（先減 1/3、跌破出場價全出）。
+ <b>加碼張數一律不算</b>，只告訴你區間端點與每 1 張的金額，加幾張你自己決定。
+ 成本為券商顯示值，<b>未還原除權息</b>。</p>
 
 <div class="k">
  <div class="kh"><span class="nm">長榮 <em>2603</em></span>
-  <span class="px up">215.25<small>+0.35%</small></span>
+  <span class="px up">215.00<small>+0.23%</small></span>
   <span class="sc">綜合 69</span></div>
- <div class="st">較昨收 +0.35%、量能為 20 日均量的 0.38 倍<small>（委買賣中價，資料時間 12:22:29）</small></div>
- <div class="pos"><span>持有 <b>1 張</b></span><span>成本 <b>193.28</b></span><span>現值 <b>215,250</b></span><span class="up">未實現 <b>+21,970 元（+11.37%）</b></span></div>
- <div class="row"><span class="tag e">空手</span><span class="adv wait">仍高於買進區間上緣 211.60 元（現價 215.25，還要跌 1.7% 才進區間）→ <b>續等</b></span></div>
- <div class="row"><span class="tag h">持有</span><span class="adv"><b>續抱</b>：未達停利區間 215.67 元（現價 215.25，還差 0.2%），也未跌破出場價 204.95 元</span></div>
- <div class="row me"><span class="tag m">你的<br>操作</span><span class="adv "><b>續抱 1 張，這個價位不動作</b></span></div>
+ <div class="st">較昨收 +0.23%、量能為 20 日均量的 0.42 倍<small>（委買賣中價，資料時間 12:40:01）</small></div>
+ <div class="pos"><span>持有 <b>1 張</b></span><span>成本 <b>193.28</b></span><span>現值 <b>215,000</b></span><span class="up">未實現 <b>+21,720 元（+11.24%）</b></span></div>
+ <div class="row"><span class="tag e">空手</span><span class="adv wait">仍高於買進區間上緣 211.60 元（現價 215.00，還要跌 1.6% 才進區間）→ <b>續等</b></span></div>
+ <div class="row"><span class="tag h">持有</span><span class="adv"><b>續抱</b>：未達停利區間 215.67 元（現價 215.00，還差 0.3%），也未跌破出場價 204.95 元</span></div>
+ <div class="row me"><span class="tag m">換算<br>張數</span><span class="adv">上方結論＝續抱，<b>1 張不動</b></span></div>
  <div class="base">昨日結論：空手 <b>等回檔再買</b>｜持有 <b>續抱並設停利</b>　·　買進 205.0 – 211.6 元｜停利區間 215.7 – 234.5 元</div>
 </div>
 <div class="k">
  <div class="kh"><span class="nm">長榮航 <em>2618</em></span>
   <span class="px dn">40.88<small>-3.01%</small></span>
   <span class="sc">綜合 68</span></div>
- <div class="st">較昨收 -3.01%、量能為 20 日均量的 0.57 倍<small>（委買賣中價，資料時間 12:22:39）</small></div>
+ <div class="st">較昨收 -3.01%、量能為 20 日均量的 0.59 倍<small>（委買賣中價，資料時間 12:40:01）</small></div>
  <div class="pos"><span>持有 <b>5 張</b></span><span>成本 <b>35.35</b></span><span>現值 <b>204,400</b></span><span class="up">未實現 <b>+27,650 元（+15.64%）</b></span></div>
  <div class="row"><span class="tag e">空手</span><span class="adv go"><b>✅ 已進入買進區間 40.26 – 42.35 元</b>（現價 40.88）→ <b>可分批進場</b></span></div>
  <div class="row"><span class="tag h">持有</span><span class="adv"><b>續抱</b>：未達停利區間 44.44 元（現價 40.88，還差 8.7%），也未跌破出場價 40.58 元</span></div>
- <div class="row me"><span class="tag m">你的<br>操作</span><span class="adv "><b>續抱 5 張，這個價位不動作</b>。現價已進入買進區間，但 <code>positions.py</code> 的 <code>plan_lots</code> 未設上限，本頁不替你決定加幾張<span class="pw">買進區間下緣 40.26 元<b>低於</b>出場價 40.58 元 —— 區間內的加碼與持有的出場條件互相矛盾，加碼前先確認站穩 40.58 元</span></span></div>
+ <div class="row me"><span class="tag m">換算<br>張數</span><span class="adv">上方結論＝可買進，<b>現價在加碼區間 40.26 – 42.35 元內</b>（每 1 張約需 <b>40,880 元</b>）；<b>加幾張由你自己決定</b>，本頁不算張數。手上已有 5 張<span class="pw">價位對照：買進區間下緣 40.26 元低於出場價 40.58 元，兩者重疊。</span></span></div>
  <div class="base">昨日結論：空手 <b>分批買進</b>｜持有 <b>續抱</b>　·　買進 40.3 – 42.4 元｜停利區間 44.4 – 45.7 元</div>
 </div>
 <div class="k">
  <div class="kh"><span class="nm">東元 <em>1504</em></span>
-  <span class="px up">70.35<small>+4.53%</small></span>
+  <span class="px up">70.45<small>+4.68%</small></span>
   <span class="sc">綜合 54</span></div>
- <div class="st">較昨收 +4.53%、量能為 20 日均量的 2.33 倍<small>（委買賣中價，資料時間 12:22:35）</small></div>
- <div class="pos"><span>持有 <b>2 張</b></span><span>成本 <b>84.62</b></span><span>現值 <b>140,700</b></span><span class="dn">未實現 <b>-28,540 元（-16.86%）</b></span></div>
- <div class="row"><span class="tag e">空手</span><span class="adv go"><b>條件已觸發</b>：帶量站上關鍵價 69.73 元（現價 70.35、量能已達 20 日均量的 2.33 倍），昨日設定的重新評估門檻成立 → <b>可小量試單</b>，但務必等收盤確認站穩</span></div>
- <div class="row"><span class="tag h">持有</span><span class="adv"><b>已帶量突破停利區間上緣 70.29 元</b>（現價 70.35、量能達 20 日均量 2.33 倍）——<b>這比較像趨勢轉強而非反彈</b>，停利可縮手或改用移動停利（例如跌破當日低點 68.30 元再走）</span></div>
- <div class="row me"><span class="tag m">你的<br>操作</span><span class="adv "><b>2 張全數保留，暫不減碼</b> —— 帶量突破（2.33 倍）比較像趨勢轉強，改用移動停利（跌破當日低點 68.30 元再走）　·　距解套價 84.62 元還要漲 20.3%<span class="pw">解套價 84.62 元高於停利區間上緣 70.29 元 —— <b>這一檔的減碼區間全數低於成本，任何在區間內的動作都是認賠，不是停利</b></span></span></div>
+ <div class="st">較昨收 +4.68%、量能為 20 日均量的 2.47 倍<small>（委買賣中價，資料時間 12:40:00）</small></div>
+ <div class="pos"><span>持有 <b>2 張</b></span><span>成本 <b>84.62</b></span><span>現值 <b>140,900</b></span><span class="dn">未實現 <b>-28,340 元（-16.75%）</b></span></div>
+ <div class="row"><span class="tag e">空手</span><span class="adv go"><b>條件已觸發</b>：帶量站上關鍵價 69.73 元（現價 70.45、量能已達 20 日均量的 2.47 倍），昨日設定的重新評估門檻成立 → <b>可小量試單</b>，但務必等收盤確認站穩</span></div>
+ <div class="row"><span class="tag h">持有</span><span class="adv"><b>已帶量突破停利區間上緣 70.29 元</b>（現價 70.45、量能達 20 日均量 2.47 倍）——<b>這比較像趨勢轉強而非反彈</b>，停利可縮手或改用移動停利（例如跌破當日低點 68.30 元再走）</span></div>
+ <div class="row me"><span class="tag m">換算<br>張數</span><span class="adv">上方結論＝改移動停利，<b>2 張全數保留</b>，這個價位不減　·　距解套價 84.62 元還要漲 20.1%<span class="pw">成本對照：解套價 84.62 元高於停利上緣 70.29 元 —— 在這個區間執行會實現虧損，金額如上。</span></span></div>
  <div class="base">昨日結論：空手 <b>不建議買進</b>｜持有 <b>續抱並設停利</b>　·　買進 暫不設買點｜停利區間 69.7 – 70.3 元</div>
 </div>
 <div class="k">
  <div class="kh"><span class="nm">亞力 <em>1514</em></span>
   <span class="px up">103.25<small>+1.23%</small></span>
   <span class="sc">綜合 45</span></div>
- <div class="st">較昨收 +1.23%、量能為 20 日均量的 0.80 倍<small>（委買賣中價，資料時間 12:22:25）</small></div>
+ <div class="st">較昨收 +1.23%、量能為 20 日均量的 0.82 倍<small>（委買賣中價，資料時間 12:39:51）</small></div>
  <div class="pos"><span>持有 <b>1 張</b></span><span>成本 <b>126.68</b></span><span>現值 <b>103,250</b></span><span class="dn">未實現 <b>-23,430 元（-18.50%）</b></span></div>
  <div class="row"><span class="tag e">空手</span><span class="adv no"><b>維持不建議買進</b>：關鍵價 114.24 元未突破（現價 103.25）</span></div>
  <div class="row"><span class="tag h">持有</span><span class="adv"><b>續抱</b>：未達減碼區間 107.81 元（現價 103.25，還差 4.4%），也未跌破出場價 101.18 元</span></div>
- <div class="row me"><span class="tag m">你的<br>操作</span><span class="adv "><b>續抱 1 張，這個價位不動作</b>　·　距解套價 126.68 元還要漲 22.7%<span class="pw">解套價 126.68 元高於減碼區間上緣 114.24 元 —— <b>這一檔的減碼區間全數低於成本，任何在區間內的動作都是認賠，不是停利</b></span></span></div>
+ <div class="row me"><span class="tag m">換算<br>張數</span><span class="adv">上方結論＝續抱，<b>1 張不動</b>　·　距解套價 126.68 元還要漲 22.7%<span class="pw">成本對照：解套價 126.68 元高於減碼上緣 114.24 元 —— 在這個區間執行會實現虧損，金額如上。</span></span></div>
  <div class="base">昨日結論：空手 <b>不建議買進</b>｜持有 <b>逢高減碼</b>　·　買進 暫不設買點｜減碼區間 107.8 – 114.2 元</div>
 </div></div>
 <a class="back" href="../index.html">← 回總覽首頁</a>
