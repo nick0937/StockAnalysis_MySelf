@@ -226,6 +226,9 @@ def position_plan(px, lv, p, vr=None, trim_frac=1.0 / 3.0):
     if lv.get("sell_hi") and be > lv["sell_hi"]:
         r["note"] = ("成本對照：解套價 %.2f 元高於%s上緣 %.2f 元 —— "
                      "在這個區間執行會實現虧損，金額如上。" % (be, lab, lv["sell_hi"]))
+    elif (lv.get("sell_lo") and be <= lv["sell_lo"] and r["act"] in ("trim", "trail")):
+        r["note"] = ("成本對照：解套價 %.2f 元低於%s下緣 %.2f 元 —— "
+                     "整段區間都在成本之上，執行即為實現獲利。" % (be, lab, lv["sell_lo"]))
     elif lv.get("buy_lo") and lv.get("stop") and lv["buy_lo"] < lv["stop"] <= (lv.get("buy_hi") or 0):
         r["note"] = ("價位對照：買進區間下緣 %.2f 元低於出場價 %.2f 元，兩者重疊。"
                      % (lv["buy_lo"], lv["stop"]))

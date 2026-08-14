@@ -169,9 +169,9 @@ def my_plan(code, q, vr):
     d = pl(p["shares"], p["cost"], px, p.get("div_ps") or 0.0)
     r = position_plan(px, lvv, p, vr=vr, trim_frac=TRIM_FRAC)
     k = "up" if d["pl"] > 0 else ("dn" if d["pl"] < 0 else "flat")
-    strip = ('<div class="pos"><span>持有 <b>%.0f 張</b></span><span>成本 <b>%s</b></span>'
+    strip = ('<div class="pos" data-pos="%s"><span>持有 <b>%.0f 張</b></span><span>成本 <b>%s</b></span>'
              '<span>現值 <b>%s</b></span><span class="%s">未實現 <b>%s 元（%+.2f%%）</b></span></div>'
-             % (d["lots"], n(d["cost"]), cm(d["mkt_val"]), k, money(d["pl"]), d["pl_pct"]))
+             % (code, d["lots"], n(d["cost"]), cm(d["mkt_val"]), k, money(d["pl"]), d["pl_pct"]))
 
     nl, lots, be = r["n_lots"], r["lots"], r["breakeven"]
     if r["act"] == "exit":
@@ -193,7 +193,7 @@ def my_plan(code, q, vr):
         t += "　·　距解套價 %.2f 元還要漲 %.1f%%" % (be, (be / px - 1) * 100)
     if r["note"]:
         t += '<span class="pw">%s</span>' % r["note"]
-    return strip, '<span class="adv">%s</span>' % t, r
+    return strip, '<span class="adv" data-conv="%s">%s</span>' % (code, t), r
 
 
 def main():
@@ -212,7 +212,7 @@ def main():
     state = ("盤中" if (9 * 60 <= t0.hour * 60 + t0.minute) and mkt_open
              else ("盤前" if mkt_open else "已收盤"))
 
-    cards, plans, tot_cv, tot_mv = [], {}, 0.0, 0.0
+    cards, plans, tot_cv, tot_mv, sim = [], {}, 0.0, 0.0, []
     for c in order:
         q, ind = Q.get(c), IND["stocks"][c]
         if not q:
@@ -226,6 +226,31 @@ def main():
             tot_cv += p["shares"] * p["cost"]
             tot_mv += p["shares"] * q["px"]
         cls = "up" if (q["chg_pct"] or 0) > 0 else ("dn" if (q["chg_pct"] or 0) < 0 else "flat")
+
+        # ★ 試算器資料（守則第 20.4 節）：只餵「換算層」需要的東西。
+        #   act/title 由現價對區間決定，與成本無關，因此在這裡算好、JS 不再重算。
+        lv = LIVE[c]
+        sim.append(dict(
+            code=c, name=q["name"], px=q["px"],
+            lots=(p["shares"] / 1000.0) if (p and p.get("shares")) else 0.0,
+            cost=(p["cost"] if p else 0.0), div_ps=((p.get("div_ps") or 0.0) if p else 0.0),
+            act=(r["act"] if r else "none"), title=(r.get("title", "") if r else ""),
+            lab=ZONE[c]["sell_lab"].replace("區間", ""),
+            sell_lo=lv.get("sell_lo"), sell_hi=lv.get("sell_hi"),
+            buy_lo=lv.get("buy_lo"), buy_hi=lv.get("buy_hi"), stop=lv.get("stop")))
+
+        simbox = ("""
+ <div class="sim" data-sim="%s">
+  <div class="sf">
+   <label>假設每股成本<input type="number" step="0.01" min="0" data-f="cost" value="%s"></label>
+   <label>假設張數<input type="number" step="1" min="0" data-f="lots" value="%s"></label>
+   <button type="button" data-f="reset">還原</button>
+  </div>
+  <p class="sn">改這兩格只會重算上面「換算張數」那一行的金額與解套價。<b>空手與持有的結論不會變</b>
+  —— 它們只看現價與報告訂下的區間，跟你買在哪裡無關。試算不寫回 positions.py。</p>
+ </div>""" % (c, ("%.2f" % p["cost"]) if (p and p.get("cost")) else "",
+              ("%.0f" % (p["shares"] / 1000.0)) if (p and p.get("shares")) else ""))
+
         cards.append("""
 <div class="k">
  <div class="kh"><span class="nm">%s <em>%s</em></span>
@@ -236,9 +261,10 @@ def main():
  <div class="row"><span class="tag e">空手</span><span class="adv %s">%s</span></div>
  <div class="row"><span class="tag h">持有</span><span class="adv">%s</span></div>
  <div class="row me"><span class="tag m">換算<br>張數</span>%s</div>
+ %s
  <div class="base">昨日結論：空手 <b>%s</b>｜持有 <b>%s</b>　·　%s</div>
 </div>""" % (q["name"], c, cls, q["px"] or 0, q["chg_pct"] or 0, TOT[c],
-             note, q["px_src"], q["t"], strip, tone, empty, hold, act,
+             note, q["px_src"], q["t"], strip, tone, empty, hold, act, simbox,
              ADV[c][2], ADV[c][5],
              ("買進 %s" % ZONE[c]["buy_zone"]) + "｜" + ("%s %s" % (ZONE[c]["sell_lab"], ZONE[c]["sell_zone"]))))
 
@@ -305,6 +331,20 @@ body{background:var(--bg);color:var(--ink);overflow-wrap:break-word;line-height:
 .sr b{font-size:15px;font-variant-numeric:tabular-nums}
 .sr.up b{color:var(--up)}.sr.dn b{color:var(--dn)}
 @media(min-width:640px){.sum{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.sim{margin:8px 0 0 55px;border:1px dashed #c9d3de;border-radius:8px;background:#fafcfe}
+.sim .sf{display:flex;flex-wrap:wrap;gap:8px;align-items:end;padding:9px 10px 8px}
+.sim label{font-size:11.5px;color:var(--ink2);display:flex;flex-direction:column;gap:3px;flex:1 1 120px;min-width:0}
+.sim input{width:100%%;font:inherit;font-size:16px;font-variant-numeric:tabular-nums;
+ padding:6px 8px;border:1px solid #c9d3de;border-radius:6px;background:#fff;color:var(--ink);min-height:38px}
+.sim input:focus{outline:2px solid #17497f;outline-offset:-1px}
+.sim button{font:inherit;font-size:12px;font-weight:700;padding:0 12px;min-height:38px;
+ border:1px solid #c9d3de;border-radius:6px;background:#eef2f7;color:#17497f;cursor:pointer;flex:0 0 auto}
+.sim button:active{background:#dde5ee}
+.sim .sn{margin:0;padding:0 10px 9px;font-size:11px;color:var(--ink3);line-height:1.55}
+.simon{background:#fff8e6;border-color:#e0a01e}
+.simtag{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:800;padding:1px 7px;
+ border-radius:99px;background:#c07a12;color:#fff;vertical-align:1px}
+@media(max-width:520px){.sim{margin-left:0}}
 .base{margin-top:9px;padding-top:8px;border-top:1px dashed var(--line);font-size:11.5px;color:var(--ink3)}
 .foot{margin:4px 12px 18px;padding:11px 12px;background:#eef1f5;border:1px solid var(--line);
  border-radius:10px;font-size:11.5px;color:var(--ink3);line-height:1.75}
@@ -327,6 +367,93 @@ body{background:var(--bg);color:var(--ink);overflow-wrap:break-word;line-height:
  成本為券商顯示值，<b>未還原除權息</b>。</p>
 %s</div>
 <a class="back" href="../index.html">← 回總覽首頁</a>
+<script>
+/* ★ 成本試算器（守則第 20.4 節）——只重算「換算層」。
+   空手／持有兩行由 Python 產生後即不再更動，JS 完全不碰它們。
+   act（出場／減碼／續抱…）由現價對區間決定，已在 Python 算好，這裡不重算。 */
+(function(){
+var D=%s, LOT=1000, TRIM=%s;
+function cm(v,d){d=d||0;return (v<0?"-":"")+Math.abs(v).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});}
+function nf(v,d){d=(d===undefined)?2:d;return Math.abs(v)>=1000?cm(v,d):v.toFixed(d);}
+function money(v){return (v>0?"+":"")+cm(Math.round(v));}
+function halfUp(x){return Math.floor(x+0.5);}
+function trimLots(n){return Math.max(1,Math.min(Math.floor(n),halfUp(n*TRIM)));}
+function calc(s,cost,lots){
+ var px=s.px, be=cost-s.div_ps, sh=lots*LOT;
+ var o={be:be,lots:lots,cv:sh*cost,mv:sh*px,inProfit:px>=be};
+ o.pl=o.mv-o.cv; o.plPct=cost?((px/cost-1)*100):0;
+ o.act=(lots>0)?s.act:"none";
+ if(o.act==="exit"){o.n=lots;}
+ else if(o.act==="trim"){o.n=trimLots(lots);}
+ else {o.n=0;}
+ o.realized=(o.act==="exit"||o.act==="trim")?(px-cost)*o.n*LOT:0;
+ return o;
+}
+function render(s,cost,lots,dirty){
+ var o=calc(s,cost,lots), px=s.px, t;
+ var posEl=document.querySelector('[data-pos="'+s.code+'"]');
+ var cvEl=document.querySelector('[data-conv="'+s.code+'"]');
+ if(!posEl||!cvEl)return o;
+ var k=o.pl>0?"up":(o.pl<0?"dn":"flat");
+ posEl.innerHTML='<span>持有 <b>'+o.lots.toFixed(0)+' 張</b></span><span>成本 <b>'+nf(cost)+'</b></span>'
+  +'<span>現值 <b>'+cm(o.mv)+'</b></span><span class="'+k+'">未實現 <b>'+money(o.pl)
+  +' 元（'+(o.plPct>0?"+":"")+o.plPct.toFixed(2)+'%%）</b></span>'
+  +(dirty?'<span class="simtag">試算</span>':'');
+ if(o.act==="none"){t='目前無持倉 —— 依上方「空手」結論處理';}
+ else if(o.act==="exit"){t='上方結論＝出場，換算成 <b>'+o.n.toFixed(0)+' 張（全部）</b>；以現價 '+px.toFixed(2)
+  +' 元計，這一筆實現 <b>'+money(o.realized)+' 元</b>';}
+ else if(o.act==="trim"){t='上方結論＝'+s.title+'，換算成 <b>'+o.n.toFixed(0)+' 張</b>（共 '+o.lots.toFixed(0)
+  +' 張，留 '+(o.lots-o.n).toFixed(0)+' 張）；以現價 '+px.toFixed(2)+' 元計，這 '+o.n.toFixed(0)
+  +' 張實現 <b>'+money(o.realized)+' 元</b>';}
+ else if(o.act==="trail"){t='上方結論＝改移動停利，<b>'+o.lots.toFixed(0)+' 張全數保留</b>，這個價位不減';}
+ else if(o.act==="addzone"){t='上方結論＝可買進，<b>現價在加碼區間 '+s.buy_lo.toFixed(2)+' – '+s.buy_hi.toFixed(2)
+  +' 元內</b>（每 1 張約需 <b>'+cm(px*LOT)+' 元</b>）；<b>加幾張由你自己決定</b>，本頁不算張數。手上已有 '
+  +o.lots.toFixed(0)+' 張';}
+ else {t='上方結論＝續抱，<b>'+o.lots.toFixed(0)+' 張不動</b>';}
+ if(!o.inProfit&&px){t+='　·　距解套價 '+o.be.toFixed(2)+' 元還要漲 '+((o.be/px-1)*100).toFixed(1)+'%%';}
+ if(s.sell_hi&&o.be>s.sell_hi){
+  t+='<span class="pw">成本對照：解套價 '+o.be.toFixed(2)+' 元高於'+s.lab+'上緣 '+s.sell_hi.toFixed(2)
+   +' 元 —— 在這個區間執行會實現虧損，金額如上。</span>';
+ }else if(s.sell_lo&&o.be<=s.sell_lo&&(o.act==="trim"||o.act==="trail")){
+  t+='<span class="pw">成本對照：解套價 '+o.be.toFixed(2)+' 元低於'+s.lab+'下緣 '+s.sell_lo.toFixed(2)
+   +' 元 —— 整段區間都在成本之上，執行即為實現獲利。</span>';
+ }else if(s.buy_lo&&s.stop&&s.buy_lo<s.stop&&s.stop<=(s.buy_hi||0)){
+  t+='<span class="pw">價位對照：買進區間下緣 '+s.buy_lo.toFixed(2)+' 元低於出場價 '+s.stop.toFixed(2)+' 元，兩者重疊。</span>';
+ }
+ cvEl.innerHTML=t;
+ return o;
+}
+function totals(){
+ var cv=0,mv=0,todo=0;
+ D.forEach(function(s){
+  var box=document.querySelector('[data-sim="'+s.code+'"]');
+  var c=parseFloat(box.querySelector('[data-f=cost]').value),
+      l=parseFloat(box.querySelector('[data-f=lots]').value);
+  if(!isFinite(c)||c<=0)c=s.cost; if(!isFinite(l)||l<0)l=s.lots;
+  var dirty=(Math.abs(c-s.cost)>1e-9)||(Math.abs(l-s.lots)>1e-9);
+  box.classList.toggle("simon",dirty);
+  var o=render(s,c,l,dirty);
+  cv+=o.cv; mv+=o.mv;
+  if(o.act==="exit"||o.act==="trim")todo++;
+ });
+ var bar=document.querySelector(".sum");
+ if(bar){var pl=mv-cv, k=pl>0?"up":(pl<0?"dn":"flat");
+  bar.innerHTML='<div class="sr"><span>投入成本</span><b>'+cm(cv)+'</b></div>'
+   +'<div class="sr"><span>目前市值</span><b>'+cm(mv)+'</b></div>'
+   +'<div class="sr '+k+'"><span>未實現損益</span><b>'+money(pl)+' 元（'
+   +(cv?((pl/cv*100)>0?"+":""):"")+(cv?(pl/cv*100).toFixed(2):"0.00")+'%%）</b></div>'
+   +'<div class="sr"><span>有動作的檔數</span><b>'+(todo?todo+" 檔有動作":"無，全部續抱")+'</b></div>';}
+}
+document.addEventListener("input",function(e){if(e.target.closest(".sim"))totals();});
+document.addEventListener("click",function(e){
+ var b=e.target.closest('[data-f=reset]'); if(!b)return;
+ var box=b.closest(".sim"), s=D.filter(function(x){return x.code===box.dataset.sim;})[0];
+ box.querySelector('[data-f=cost]').value=s.cost?s.cost.toFixed(2):"";
+ box.querySelector('[data-f=lots]').value=s.lots?s.lots.toFixed(0):"";
+ totals();
+});
+})();
+</script>
 <div class="foot">
  <p><b>這一頁只回答「現在該怎麼做」</b>：拿最近一期收盤報告訂下的買賣區間與出場價，
  對照證交所即時報價（MIS，延遲約 5~20 秒），判斷現價落在哪一段。
@@ -338,7 +465,8 @@ body{background:var(--bg);color:var(--ink);overflow-wrap:break-word;line-height:
 </div>
 """ % (t0.strftime("%m/%d %H:%M"),
        state, t0.strftime("%Y/%m/%d %H:%M:%S"), C.BASE_DATE, C.BASE_WEEKDAY,
-       sumbar, POS_SRC, POS_AS_OF, "".join(cards))
+       sumbar, POS_SRC, POS_AS_OF, "".join(cards),
+       json.dumps(sim, ensure_ascii=False), repr(TRIM_FRAC))
 
     out_dir = os.path.join(C.REPO, "live")
     os.makedirs(out_dir, exist_ok=True)
