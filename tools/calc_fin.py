@@ -43,9 +43,16 @@ for code in C.CODES:
     qs = inc["q"]
 
     # ── 推算流通股數：三大法人合計張數 ÷ 三大法人持股比重 ──
-    inst0 = CHIP[code]["inst"][0]
-    lots, ratio = f(inst0[10]), f(inst0[12])
-    shares_k = lots / (ratio / 100) if lots and ratio else None   # 仟股
+    # ⚠ 2026-08-17 修正：當日 16:5x 產出時，玩股網的「法人估計持股」欄位尚未結算（空字串），
+    #   若直接取第 0 列會得到 None，連帶讓每股淨值與 PB 全部變成 n/a。
+    #   流通股數是緩慢變動的結構性數字，改為<b>往下找第一列兩欄都有值的</b>（通常是前一交易日），
+    #   並記錄實際採用的日期供報告註記。
+    shares_k, shares_src = None, None
+    for _row in CHIP[code]["inst"]:
+        _lots, _ratio = f(_row[10]) if len(_row) > 10 else None, f(_row[12]) if len(_row) > 12 else None
+        if _lots and _ratio:
+            shares_k, shares_src = _lots / (_ratio / 100), _row[0]   # 仟股
+            break
 
     # ── EPS（面額變更調整）──
     eps_raw = {}
@@ -129,7 +136,8 @@ for code in C.CODES:
     eps4s = sum(x for x in eps4 if x is not None) if all(x is not None for x in eps4) else None
     close = IND["stocks"][code]["close"]
 
-    out[code] = {"latest_q": qs[0], "shares_k": shares_k, "inc": rows, "bs": bs,
+    out[code] = {"latest_q": qs[0], "shares_k": shares_k, "shares_src": shares_src,
+                 "inc": rows, "bs": bs,
                  "cash": cash, "eps4": eps4s,
                  "pe": close / eps4s if eps4s and eps4s > 0 else None,
                  "pb": close / bs[0]["bps"] if bs[0]["bps"] else None,
