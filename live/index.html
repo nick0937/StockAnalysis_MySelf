@@ -1,245 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<title>盤中即時操作建議 · 08/19 13:42</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="當日即時投資建議 — 以最新一期日報的買賣區間比對即時報價，只給操作動作">
+<title>當日即時投資建議｜台股每日個股觀察報告</title>
 <style>
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-:root{--bg:#f4f6f9;--card:#fff;--ink:#1a2230;--ink2:#4a5768;--ink3:#7a8798;
- --line:#dde3ea;--up:#c62828;--dn:#1b7a3d;--acc:#1f5fa9;--nav:#1b2534}
+:root{--bg:#f4f6f9;--card:#fff;--ink:#1a2230;--ink2:#4a5768;--ink3:#7a8798;--line:#dde3ea;
+ --up:#c62828;--dn:#1b7a3d;--acc:#1f5fa9;--nav:#1b2534;--pad:12px;--r:10px}
 html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden}
-body{background:var(--bg);color:var(--ink);overflow-wrap:break-word;line-height:1.6;
- font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",-apple-system,"Segoe UI",sans-serif;font-size:15px}
-.hd{background:var(--nav);color:#fff;padding:18px 12px 16px}
-.hd h1{margin:0 0 4px;font-size:clamp(19px,5vw,27px);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-.hd .bdg{background:#c07a12;color:#fff;font-size:12px;font-weight:800;border-radius:999px;
- padding:3px 11px;letter-spacing:.5px}
+body{background:var(--bg);color:var(--ink);overflow-wrap:break-word;word-break:break-word;
+ font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+ font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+a{color:var(--acc);text-decoration:none}
+.hd{background:var(--nav);color:#fff;padding:18px var(--pad) 16px}
+.hdin{max-width:960px;margin:0 auto}
+.hd h1{margin:0 0 5px;font-size:clamp(19px,5.2vw,29px);line-height:1.25}
 .hd p{margin:0;color:#b9c6d6;font-size:clamp(12px,3.3vw,14px)}
-.hd .nb{margin-top:7px;font-size:11.5px;color:#e0c27f;background:rgba(192,122,18,.18);
- border:1px solid rgba(224,194,127,.35);border-radius:7px;padding:6px 9px;line-height:1.55}
-.wrap{padding:12px;display:grid;gap:10px}
-.k{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 13px}
-.kh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:2px}
-.nm{font-size:17px;font-weight:800}.nm em{font-style:normal;font-size:12.5px;color:var(--ink3);font-weight:600}
-.px{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;margin-left:auto}
-.px small{font-size:13px;margin-left:5px}
-.px.up,.px.up small{color:var(--up)}.px.dn,.px.dn small{color:var(--dn)}
-.sc{font-size:11.5px;color:var(--ink3);background:#f2f5f9;border-radius:999px;padding:2px 9px;font-weight:700}
-.st{font-size:12.5px;color:var(--ink2);margin-bottom:9px}
-.st small{color:var(--ink3);font-size:11.5px}
-.row{display:grid;grid-template-columns:46px minmax(0,1fr);gap:9px;align-items:start;margin-top:7px}
-.tag{font-size:12px;font-weight:800;border-radius:6px;padding:3px 0;text-align:center;color:#fff;line-height:1.25}
-.tag.e{background:#17497f}.tag.h{background:#8a5a00}.tag.m{background:#1b2534;font-size:11px}
-.adv{font-size:13.5px;color:var(--ink)}
-.adv.go{color:#17497f}.adv.warn{color:#9e3414}.adv.no{color:var(--ink3)}
-.row.me{margin-top:9px;padding-top:9px;border-top:1px solid var(--line)}
-.row.me .adv{font-size:14px}
-.pw{display:block;margin-top:5px;font-size:12px;color:#8a5a00;background:#fff8e6;
- border:1px solid #e0c27f;border-radius:6px;padding:6px 8px;line-height:1.6}
-.pos{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--ink2);
- background:#f7f9fc;border:1px solid var(--line);border-radius:7px;padding:7px 9px}
-.pos b{font-variant-numeric:tabular-nums;color:var(--ink)}
-.pos .up b{color:var(--up)}.pos .dn b{color:var(--dn)}
-.pos.none{color:var(--ink3);font-style:normal}
-.sum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);
- border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:2px}
-.sr{background:var(--card);padding:8px 10px;display:flex;flex-direction:column;gap:1px}
-.sr span{font-size:11px;color:var(--ink3)}
-.sr b{font-size:15px;font-variant-numeric:tabular-nums}
-.sr.up b{color:var(--up)}.sr.dn b{color:var(--dn)}
-@media(min-width:640px){.sum{grid-template-columns:repeat(4,minmax(0,1fr))}}
-.sim{margin:8px 0 0 55px;border:1px dashed #c9d3de;border-radius:8px;background:#fafcfe}
-.sim .sf{display:flex;flex-wrap:wrap;gap:8px;align-items:end;padding:9px 10px 8px}
-.sim label{font-size:11.5px;color:var(--ink2);display:flex;flex-direction:column;gap:3px;flex:1 1 120px;min-width:0}
-.sim input{width:100%;font:inherit;font-size:16px;font-variant-numeric:tabular-nums;
- padding:6px 8px;border:1px solid #c9d3de;border-radius:6px;background:#fff;color:var(--ink);min-height:38px}
-.sim input:focus{outline:2px solid #17497f;outline-offset:-1px}
-.sim button{font:inherit;font-size:12px;font-weight:700;padding:0 12px;min-height:38px;
- border:1px solid #c9d3de;border-radius:6px;background:#eef2f7;color:#17497f;cursor:pointer;flex:0 0 auto}
-.sim button:active{background:#dde5ee}
-.sim .sn{margin:0;padding:0 10px 9px;font-size:11px;color:var(--ink3);line-height:1.55}
-.simon{background:#fff8e6;border-color:#e0a01e}
-.simtag{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:800;padding:1px 7px;
- border-radius:99px;background:#c07a12;color:#fff;vertical-align:1px}
-@media(max-width:520px){.sim{margin-left:0}}
-.base{margin-top:9px;padding-top:8px;border-top:1px dashed var(--line);font-size:11.5px;color:var(--ink3)}
-.foot{margin:4px 12px 18px;padding:11px 12px;background:#eef1f5;border:1px solid var(--line);
- border-radius:10px;font-size:11.5px;color:var(--ink3);line-height:1.75}
-.back{display:block;margin:0 12px 12px;padding:11px;background:var(--acc);color:#fff;border-radius:10px;
- text-align:center;font-weight:800;text-decoration:none;font-size:14px}
-@media(min-width:1000px){.hd,.wrap,.foot,.back{max-width:860px;margin-left:auto;margin-right:auto}}
+.ph{display:inline-block;border-radius:999px;padding:2px 11px;font-size:11.5px;font-weight:700;margin-right:7px}
+.ph-live{background:var(--up);color:#fff} .ph-close{background:#3d4d66;color:#dbe4ef}
+.ph-off{background:#55617a;color:#e6ecf4}
+.wrap{padding:var(--pad);max-width:960px;margin:0 auto}
+.back{display:inline-flex;align-items:center;min-height:34px;font-size:13px;font-weight:700;margin-bottom:10px}
+.idx{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:11px 13px;margin-bottom:12px;
+ font-variant-numeric:tabular-nums;font-size:14px}
+.idx b{font-size:19px} .idx i{font-style:normal;font-weight:700}
+.up{color:var(--up)} .dn{color:var(--dn)}
+h2.s{margin:16px 0 9px;font-size:clamp(15px,4.2vw,19px);padding-left:9px;border-left:3px solid var(--acc)}
+.alerts{background:#fff6f4;border:1px solid #f0cdc4;border-radius:var(--r);padding:10px 13px;margin-bottom:12px;font-size:13.5px}
+.alerts ul{margin:6px 0 0;padding-left:19px} .alerts li{margin-bottom:3px}
+.alerts .t{display:inline-block;min-width:22px;text-align:center;border-radius:5px;font-size:11px;font-weight:800;
+ padding:0 4px;margin-right:6px;color:#fff}
+.t-買{background:var(--up)} .t-賣{background:var(--dn)} .t-警{background:#b25e00} .t-時{background:#5b4bbd}
+.cards{display:grid;gap:10px}
+.cd{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 13px}
+.cnm{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:7px}
+.cnm b{font-size:17px} .cnm .cd-c{color:var(--ink3);font-size:13px;font-variant-numeric:tabular-nums}
+.sc{margin-left:auto;font-size:12px;color:var(--ink3);font-weight:700}
+.pxr{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;font-variant-numeric:tabular-nums;
+ padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.pxr .p{font-size:25px;font-weight:800;line-height:1.1}
+.pxr .d{font-size:14.5px;font-weight:700}
+.pxr .x{font-size:12px;color:var(--ink3)}
+.act{display:grid;gap:2px 9px;grid-template-columns:44px minmax(0,1fr);margin-bottom:7px}
+.act:last-child{margin-bottom:0}
+.act .k{grid-column:1;font-size:11.5px;font-weight:800;color:#fff;border-radius:6px;text-align:center;
+ align-self:start;padding:3px 0;margin-top:1px}
+.act .k.ke{background:#3d4d66} .act .k.kh{background:#2e6b4f}
+.act .v{grid-column:2;font-size:14.5px;font-weight:800}
+.act .w{grid-column:2;font-size:12.5px;color:var(--ink2);line-height:1.6}
+.act .pv{grid-column:2;font-size:11.5px;color:var(--ink3);margin-bottom:1px}
+.a-buy{color:var(--up)} .a-sell{color:var(--dn)} .a-cut{color:var(--dn)}
+.a-warn{color:#b25e00} .a-wait{color:var(--ink2)} .a-no{color:var(--ink3)} .a-hold{color:var(--acc)}
+.tp{margin-top:7px;padding:6px 9px;background:#f3f0ff;border:1px solid #ded6fb;border-radius:7px;
+ font-size:12px;color:#4b3fa8;line-height:1.6}
+.sim{margin-top:9px;padding:9px 10px;background:#f6f8fb;border:1px dashed #c3cfdf;border-radius:8px}
+.sim .sh{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;margin-bottom:7px;font-size:11.5px;color:var(--ink3)}
+.sim .sh b{font-size:12.5px;color:var(--ink2)}
+.simrow{display:flex;gap:7px;align-items:center}
+.simrow input{flex:1;min-width:0;max-width:190px;border:1px solid var(--line);border-radius:7px;
+ padding:7px 10px;font-size:16px;font-variant-numeric:tabular-nums;background:#fff;color:var(--ink)}
+.simrow input:focus{outline:2px solid var(--acc);outline-offset:-1px;border-color:var(--acc)}
+.simx{border:1px solid var(--line);background:#fff;color:var(--ink3);border-radius:7px;
+ padding:7px 12px;font-size:12.5px;cursor:pointer;min-height:36px}
+.simout{margin-top:7px;line-height:1.65}
+.simstat{font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--ink2);margin-bottom:3px}
+.simadv{font-size:13.5px;font-weight:800}
+.simadv .sw{display:block;font-weight:400;font-size:12.5px;color:var(--ink2);margin-top:1px}
+.simwarn{margin-top:4px;font-size:12px;color:#b25e00}
+/* ★ MySelf 專屬：實際持倉（守則第 20.4 節）*/
+.sum{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:11px 13px;margin-bottom:12px}
+.sum .st{font-size:12px;color:var(--ink3);margin-bottom:6px}
+.sum .sg{display:grid;gap:7px 12px;grid-template-columns:repeat(2,minmax(0,1fr));font-variant-numeric:tabular-nums}
+.sum .sg>div{min-width:0}
+.sum .sg span{display:block;font-size:11.5px;color:var(--ink3)}
+.sum .sg b{font-size:16px;font-weight:800}
+.sum .todo{margin-top:8px;padding-top:7px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink2)}
+.pos{margin-top:8px;padding:8px 10px;background:#f2f7fb;border:1px solid #cddff0;border-radius:8px;
+ font-size:12.5px;line-height:1.7;font-variant-numeric:tabular-nums}
+.pos .ph2{font-size:11.5px;color:var(--ink3);margin-bottom:2px}
+.pos .pw{margin-top:4px;font-size:12.5px;font-weight:800}
+.pos .pn{margin-top:4px;padding:5px 8px;background:#fff8ec;border:1px solid #e8d5a8;border-radius:6px;
+ font-size:11.5px;font-weight:400;color:#7a5200;line-height:1.6}
+.t-倉{background:#1f5fa9}
+@media(min-width:640px){.sum .sg{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.foot{margin-top:16px;padding:12px 13px;background:#eef1f5;border:1px solid var(--line);border-radius:var(--r);
+ font-size:11.5px;color:var(--ink3);line-height:1.75}
+.foot h3{margin:0 0 4px;font-size:12.5px;color:var(--ink2)}
+.foot p{margin:0 0 7px} .foot p:last-child{margin:0}
+@media(min-width:640px){:root{--pad:16px} .act{grid-template-columns:52px minmax(0,1fr)}}
+@media(min-width:1000px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
-<header class="hd">
- <h1><span class="bdg">⚡ 即時</span>盤中即時操作建議</h1>
- <p>已收盤 · 產生於 2026/08/19 13:42:30（台北）· 基礎報告：2026-08-18（週二收盤）</p>
- <div class="nb"><b>這不是收盤報告</b>——本頁只用即時報價對照最新一期報告訂下的買賣區間，
- <b>不含五面向評分、籌碼、財報與新聞</b>。要看完整分析請回首頁開當日的「台股每日個股觀察報告」。</div>
-</header>
-<div class="wrap"><div class="sum"><div class="sr"><span>投入成本</span><b>489,200</b></div><div class="sr"><span>目前市值</span><b>483,600</b></div><div class="sr dn"><span>未實現損益</span><b>-5,600 元（-1.14%）</b></div><div class="sr"><span>有動作的檔數</span><b>2 檔有動作</b></div></div>
- <p style="margin:0;font-size:11px;color:#7a8798;line-height:1.7">
- <b>持倉來源</b>：券商 App 持股頁（每股平均成本，未還原除權息）（2026-08-17）。張數與成本改在 <code>tools/inputs/positions.py</code>，即時頁與每日報告會同步。
- <b>持倉不會改變「空手」與「持有」的結論</b> —— 那兩行完全照舊，只依報價與報告訂下的區間判斷；
- 「換算張數」只是把同一個結論換算成你的張數與金額（先減 1/3、跌破出場價全出）。
- <b>加碼張數一律不算</b>，只告訴你區間端點與每 1 張的金額，加幾張你自己決定。
- 成本為券商顯示值，<b>未還原除權息</b>。</p>
-
-<div class="k">
- <div class="kh"><span class="nm">長榮 <em>2603</em></span>
-  <span class="px up">240.50<small>+1.05%</small></span>
-  <span class="sc">綜合 82</span></div>
- <div class="st">較昨收 +1.05%、量能為 20 日均量的 1.87 倍<small>（成交價，資料時間 13:30:00）</small></div>
- <div class="pos" data-pos="2603"><span>持有 <b>1 張</b></span><span>成本 <b>193.28</b></span><span>現值 <b>240,500</b></span><span class="up">未實現 <b>+47,220 元（+24.43%）</b></span></div>
- <div class="row"><span class="tag e">空手</span><span class="adv wait">仍高於買進區間上緣 223.70 元（現價 240.50，還要跌 7.5% 才進區間）→ <b>續等</b></span></div>
- <div class="row"><span class="tag h">持有</span><span class="adv"><b>✅ 已進入停利區間 230.05 – 242.50 元</b>（現價 240.50）→ <b>可分批執行</b></span></div>
- <div class="row me"><span class="tag m">換算<br>張數</span><span class="adv" data-conv="2603">上方結論＝分批停利，換算成 <b>1 張</b>（共 1 張，留 0 張）；以現價 240.50 元計，這 1 張實現 <b>+47,220 元</b><span class="pw">成本對照：解套價 193.28 元低於停利下緣 230.05 元 —— 整段區間都在成本之上，執行即為實現獲利。</span></span></div>
- 
- <div class="sim" data-sim="2603">
-  <div class="sf">
-   <label>假設每股成本<input type="number" step="0.01" min="0" data-f="cost" value="193.28"></label>
-   <label>假設張數<input type="number" step="1" min="0" data-f="lots" value="1"></label>
-   <button type="button" data-f="reset">還原</button>
-  </div>
-  <p class="sn">改這兩格只會重算上面「換算張數」那一行的金額與解套價。<b>空手與持有的結論不會變</b>
-  —— 它們只看現價與報告訂下的區間，跟你買在哪裡無關。試算不寫回 positions.py。</p>
- </div>
- <div class="base">昨日結論：空手 <b>等回檔再買</b>｜持有 <b>續抱並設停利</b>　·　買進 216.7 – 223.7 元｜停利區間 230.1 – 242.5 元</div>
+</head>
+<body>
+<header class="hd"><div class="hdin">
+<h1>當日即時投資建議</h1>
+<p><span class="ph ph-close">已收盤（報價為今日收盤價）</span>報價時間 08/19 13:30（約 41 分鐘前・來源 玩股網）　依據 <b>2026-08-18（週二收盤）</b>日報的買賣區間</p>
+</div></header>
+<div class="wrap">
+<a class="back" href="../index.html">← 回首頁</a>
+<div class="idx">加權指數　<b>44,719.35</b>　<i class="dn">-589.33（-1.30%）</i>　<span style="color:var(--ink3)">日報環境分 62</span></div>
+<div class="sum">
+<div class="st">你的投資組合（持倉來源：券商 App 持股頁（每股平均成本，未還原除權息），2026-08-17）</div>
+<div class="sg"><div><span>投入成本</span><b>489,200</b></div><div><span>目前市值</span><b>483,600</b></div><div><span>未實現損益</span><b class="dn">-5,600</b></div><div><span>報酬率</span><b class="dn">-1.14%</b></div></div>
+<div class="todo"><b>待處理：</b>長榮 分批停利 1 張、亞力 分批出場 1 張<br><span style="color:var(--ink3);font-size:11.5px">★ 張數是把日報訂好的區間規則套到實際持倉的算術結果，不是新的判斷；加碼張數一律不算（分母是可動用資金，程式不知道）。</span></div>
 </div>
-<div class="k">
- <div class="kh"><span class="nm">東元 <em>1504</em></span>
-  <span class="px up">71.80<small>+1.13%</small></span>
-  <span class="sc">綜合 72</span></div>
- <div class="st">較昨收 +1.13%、量能為 20 日均量的 1.29 倍<small>（成交價，資料時間 13:30:00）</small></div>
- <div class="pos" data-pos="1504"><span>持有 <b>2 張</b></span><span>成本 <b>84.62</b></span><span>現值 <b>143,600</b></span><span class="dn">未實現 <b>-25,640 元（-15.15%）</b></span></div>
- <div class="row"><span class="tag e">空手</span><span class="adv wait">仍高於買進區間上緣 69.72 元（現價 71.80，還要跌 3.0% 才進區間）→ <b>續等</b></span></div>
- <div class="row"><span class="tag h">持有</span><span class="adv"><b>續抱</b>：未達停利區間 72.42 元（現價 71.80，還差 0.9%），也未跌破出場價 66.76 元</span></div>
- <div class="row me"><span class="tag m">換算<br>張數</span><span class="adv" data-conv="1504">上方結論＝續抱，<b>2 張不動</b>　·　距解套價 84.62 元還要漲 17.9%<span class="pw">成本對照：解套價 84.62 元高於停利上緣 79.78 元 —— 在這個區間執行會實現虧損，金額如上。</span></span></div>
- 
- <div class="sim" data-sim="1504">
-  <div class="sf">
-   <label>假設每股成本<input type="number" step="0.01" min="0" data-f="cost" value="84.62"></label>
-   <label>假設張數<input type="number" step="1" min="0" data-f="lots" value="2"></label>
-   <button type="button" data-f="reset">還原</button>
-  </div>
-  <p class="sn">改這兩格只會重算上面「換算張數」那一行的金額與解套價。<b>空手與持有的結論不會變</b>
-  —— 它們只看現價與報告訂下的區間，跟你買在哪裡無關。試算不寫回 positions.py。</p>
- </div>
- <div class="base">昨日結論：空手 <b>等回檔再買</b>｜持有 <b>續抱並設停利</b>　·　買進 68.5 – 69.7 元｜停利區間 72.4 – 79.8 元</div>
+<div class="alerts"><b>需要注意（7 項）</b><ul>
+<li><span class="t t-時">時</span>東元 1504——2026Q2 已於 08/12 公告（EPS 1.12 元）；下一次財報為 2026Q3</li>
+<li><span class="t t-賣">賣</span>亞力 1514——價格進入出場區間 94.7 – 100.9 元</li>
+<li><span class="t t-倉">倉</span>亞力 1514——你的部位：分批出場 1 張（以現價計實現 -27180.000000000007 元）</li>
+<li><span class="t t-時">時</span>亞力 1514——2026Q2 已公告（EPS 0.91 元）；下一次財報為 2026Q3</li>
+<li><span class="t t-賣">賣</span>長榮 2603——價格進入停利區間 230.1 – 242.5 元</li>
+<li><span class="t t-倉">倉</span>長榮 2603——你的部位：分批停利 1 張（以現價計實現 47220.0 元）</li>
+<li><span class="t t-時">時</span>長榮 2603——2026Q2 已公告（EPS 7.41 元）；下一次財報為 2026Q3</li>
+</ul></div>
+<h2 class="s">各檔操作動作（依日報綜合分排序）</h2>
+<div class="cards">
+<div class="cd">
+<div class="cnm"><b>長榮</b><span class="cd-c">2603</span><span class="sc">日報 82 分・買進</span></div>
+<div class="pxr"><span class="p up">240.50</span><span class="d up">+2.50（+1.05%）</span><span class="x">高 240.50／低 232.00　量 20,097 張（約當 20 日均量 187%）　站上 6/6 條均線</span></div>
+<div class="act"><span class="k ke">空手</span><span class="pv">日報建議：○ 等回檔再買</span><span class="v a-wait">偏貴，等回到 216.7 – 223.7 元</span><span class="w">距區間上緣 223.70 元還有 +7.5%（10 日線 216.70 ～ 5 日線 223.70（收 238.00 元仍在區間之上 6.4%，須等回檔））。</span></div>
+<div class="act"><span class="k kh">持有</span><span class="pv">日報建議：✓ 續抱並設停利</span><span class="v a-sell">已進入停利區間，依原訂條件執行</span><span class="w">停利區間 230.1 – 242.5 元（布林上軌 230.05（08/18 收盤已在其上，%B 120.11）～ 52 週高點 242.50（當日最高 242.00 幾乎觸及））。<b>本期仍在停利區間內，且位置比 08/17 更靠上緣</b>。設停利的理由三項：①三個過熱指標同時成立（K 89.10、20 日乖離 +13.17%、%B 120.11）；②<b>收盤已超過 Factset 彙總目標價 234.50 元</b>、距 52 週高僅 −1.86%，上檔技術空間幾乎用盡；③<b>近四季自由現金流 −281.47 億元</b>（Q2 單季 −227.76 億元）；④<b>★ 補跑補入的資券顯示空方在加碼</b>——券餘由 318 暴增至 418 張、券資比由 2.34% 跳升至 3.09%（連兩日跳升，10 日券餘 +82%）。區間內分批執行；<b>若帶量（量比 ≥ 1.5 倍）站上 242.50 元則改移動停利、不要機械式賣光</b>——籌碼五項同向代表趨勢未壞。<b>跌破月線 210.30 元（＝布林中軌，其下為季線 206.53）全數出場。</b></span></div>
+<div class="pos">
+<div class="ph2">你的部位</div>
+1 張・成本 193.28　現值 240,500　未實現 <b class="up">+47,220（+24.43%）</b>
+<div class="pw">上方「持有」＝分批停利，換算成 1 張（共 1 張，留 0 張）；以現價 240.50 元計，這 1 張實現 +47,220 元</div>
+<div class="pn">⚠ 成本對照：解套價 193.28 元低於停利下緣 230.05 元 —— 整段區間都在成本之上，執行即為實現獲利。</div>
 </div>
-<div class="k">
- <div class="kh"><span class="nm">亞力 <em>1514</em></span>
-  <span class="px dn">99.50<small>-0.50%</small></span>
-  <span class="sc">綜合 41</span></div>
- <div class="st">較昨收 -0.50%、量能為 20 日均量的 0.47 倍<small>（成交價，資料時間 13:30:00）</small></div>
- <div class="pos" data-pos="1514"><span>持有 <b>1 張</b></span><span>成本 <b>126.68</b></span><span>現值 <b>99,500</b></span><span class="dn">未實現 <b>-27,180 元（-21.46%）</b></span></div>
- <div class="row"><span class="tag e">空手</span><span class="adv no"><b>維持不建議買進</b>：關鍵價 113.22 元未突破（現價 99.50）</span></div>
- <div class="row"><span class="tag h">持有</span><span class="adv"><b>✅ 已進入出場區間 94.65 – 100.85 元</b>（現價 99.50）→ <b>可分批執行</b></span></div>
- <div class="row me"><span class="tag m">換算<br>張數</span><span class="adv" data-conv="1514">上方結論＝分批出場，換算成 <b>1 張</b>（共 1 張，留 0 張）；以現價 99.50 元計，這 1 張實現 <b>-27,180 元</b>　·　距解套價 126.68 元還要漲 27.3%<span class="pw">成本對照：解套價 126.68 元高於出場上緣 100.85 元 —— 在這個區間執行會實現虧損，金額如上。</span></span></div>
- 
- <div class="sim" data-sim="1514">
-  <div class="sf">
-   <label>假設每股成本<input type="number" step="0.01" min="0" data-f="cost" value="126.68"></label>
-   <label>假設張數<input type="number" step="1" min="0" data-f="lots" value="1"></label>
-   <button type="button" data-f="reset">還原</button>
-  </div>
-  <p class="sn">改這兩格只會重算上面「換算張數」那一行的金額與解套價。<b>空手與持有的結論不會變</b>
-  —— 它們只看現價與報告訂下的區間，跟你買在哪裡無關。試算不寫回 positions.py。</p>
- </div>
- <div class="base">昨日結論：空手 <b>不建議買進</b>｜持有 <b>近期出場</b>　·　買進 暫不設買點｜出場區間 94.7 – 100.9 元</div>
-</div></div>
-<a class="back" href="../index.html">← 回總覽首頁</a>
+<div class="sim" data-c="2603" data-px="240.5" data-sz0="230.1" data-sz1="242.5" data-ma5="223.7" data-ma20="210.3" data-hk="h-tp" data-slab="停利區間" data-szone="230.1 – 242.5 元"><div class="sh"><b>💰 成本模擬</b><span>已用 inputs/positions.py 的實際成本 193.28 元預填，可改成別的數字試算（不改變上方日報建議）</span></div><div class="simrow"><input type="number" inputmode="decimal" step="any" min="0" placeholder="每股成本（元）" aria-label="長榮 持有成本" value="193.28"><button type="button" class="simx">清除</button></div><div class="simout" hidden></div></div>
+<div class="tp"><b>⏳ 時間壓力</b>：2026Q2 已公告（EPS 7.41 元）；下一次財報為 2026Q3、法定期限約 11/14；2026/06/17 已除息（現金 16 元，07/17 發放）</div>
+</div>
+<div class="cd">
+<div class="cnm"><b>東元</b><span class="cd-c">1504</span><span class="sc">日報 72 分・買進</span></div>
+<div class="pxr"><span class="p up">71.80</span><span class="d up">+0.80（+1.13%）</span><span class="x">高 73.20／低 70.20　量 10,966 張（約當 20 日均量 129%）　站上 5/6 條均線</span></div>
+<div class="act"><span class="k ke">空手</span><span class="pv">日報建議：○ 等回檔再買</span><span class="v a-wait">偏貴，等回到 68.5 – 69.7 元</span><span class="w">距區間上緣 69.70 元還有 +3.0%（10 日線 68.50 ～ 季線 69.72（半年線 68.57 亦在此帶，三線密集；收 71.00 元在區間之上 1.8%））。</span></div>
+<div class="act"><span class="k kh">持有</span><span class="pv">日報建議：✓ 續抱並設停利</span><span class="v a-hold">續抱，未觸發任何條件</span><span class="w">停利區間在 72.4 – 79.8 元（布林上軌 72.42（08/18 收 71.00 元，尚差 2.0%）～ 年線 79.78；⚠ 兩者之間<b>沒有任何均線阻力</b>）；跌破 5 日線 70.24 元先縮手。<b>本期退出停利區間、回到單純的續抱</b>（08/17 收 71.90 元曾貼齊當時的上軌 71.90）。續抱的理由：法人 10 日累計 +23,068 張且近 4 日 +19,220 vs 前 6 日 +3,848（買盤持續加速）、家數差 10 日 −1,779 籌碼集中、5 日集中度由 13.12% 升至 29.28%、Q2 EPS 1.12 元 YoY +62.32%、<b>負債比 33.82% 與流動比 217.6% 為三檔最佳</b>。設停利的理由：<b>近四季 CFO÷淨利僅 0.72</b>（獲利品質從未改善）、KD 死亡交叉、外資轉賣，以及<b>★ 補跑補入的資券——08/18 融資逆勢增加 206 張而股價下跌 1.25%</b>（散戶逢低承接、不願認賠，籌碼因此由 86 降至 84）。反彈進入區間即分批停利；<b>跌破月線 66.76 元（收盤價判斷）出場</b>。</span></div>
+<div class="pos">
+<div class="ph2">你的部位</div>
+2 張・成本 84.62　現值 143,600　未實現 <b class="dn">-25,640（-15.15%）</b>
+<div class="pw">上方「持有」＝續抱，2 張不動　·　距解套價 84.62 元還要漲 17.9%</div>
+<div class="pn">⚠ 成本對照：解套價 84.62 元高於停利上緣 79.78 元 —— 在這個區間執行會實現虧損，金額如上。</div>
+</div>
+<div class="sim" data-c="1504" data-px="71.8" data-sz0="72.4" data-sz1="79.8" data-ma5="70.24" data-ma20="66.755" data-hk="h-tp" data-slab="停利區間" data-szone="72.4 – 79.8 元"><div class="sh"><b>💰 成本模擬</b><span>已用 inputs/positions.py 的實際成本 84.62 元預填，可改成別的數字試算（不改變上方日報建議）</span></div><div class="simrow"><input type="number" inputmode="decimal" step="any" min="0" placeholder="每股成本（元）" aria-label="東元 持有成本" value="84.62"><button type="button" class="simx">清除</button></div><div class="simout" hidden></div></div>
+<div class="tp"><b>⏳ 時間壓力</b>：2026Q2 已於 08/12 公告（EPS 1.12 元）；下一次財報為 2026Q3、法定期限約 11/14；2026/06/19 已除息（現金 2 元）</div>
+</div>
+<div class="cd">
+<div class="cnm"><b>亞力</b><span class="cd-c">1514</span><span class="sc">日報 41 分・減碼／賣出</span></div>
+<div class="pxr"><span class="p dn">99.50</span><span class="d dn">-0.50（-0.50%）</span><span class="x">高 100.50／低 98.20　量 796 張（約當 20 日均量 47%）　站上 0/6 條均線</span></div>
+<div class="act"><span class="k ke">空手</span><span class="pv">日報建議：✕ 不建議買進</span><span class="v a-no">不宜買進</span><span class="w">日報未設買點（<b>六條均線全部跌破</b>（5 日 101.50／10 日 101.43／月線 100.85／季線 113.22／半年線 112.60／年線 108.28），收 100.00 元；下方僅剩布林下軌 94.65 元與 52 週低點 90.20 元兩個支撐，上方無一條均線可站）。重新評估門檻：<b>三個條件須同時成立才重新評估</b>：①帶量站上季線 113.22 元（半年線 112.60 元亦在此帶，兩線重疊為中期最大反壓）；②大戶（400 張以上）由 40.90% 回升至 44% 以上（＝回到 13 週前的 44.11%）；③<b>營業現金流轉正</b>——Q2 單季 CFO −2.59 億元、CFO÷淨利 −1.03，2025Q3 亦為負。⚠ <b>本期三項籌碼全部走弱</b>：法人 −9 張、主力 −79 張、<b>家數差 +121（正＝籌碼分散，較前一日 +22 明顯擴大）</b>、5 日集中度由 −3.47% 再惡化至 −4.08%；KD 死亡交叉延續且 K 值單日由 63.13 急墜至 47.12、DIF −2.44 深在零軸之下。</span></div>
+<div class="act"><span class="k kh">持有</span><span class="pv">日報建議：✕ 近期出場</span><span class="v a-sell">已進入出場區間，依原訂條件執行</span><span class="w">出場區間 94.7 – 100.9 元（布林下軌 94.65 ～ 月線 100.85（＝布林中軌，08/18 以 100.00 元跌破）——<b>現價已落在區間內，可直接執行</b>）。<b>★ 持有結論由「逢高減碼」升級為「近期出場」</b>：08/17 那期訂下的觸發條件「再次跌破月線 101.12 元則減至半」<b>本期已成立</b>（收 100.00 元、新月線 100.85 元），而且惡化不只價格——<b>六條均線由「站回月線」變成「全部跌破」、家數差由 +22 擴大到 +121、主力由買轉賣、綜合分 45 → 42 落入「減碼／賣出」區</b>。現價已在出場區間內，先執行昨日計畫的減半；<b>反彈至 10 日線 101.43 元或布林上軌 107.04 元出清剩餘部位</b>；<b>跌破布林下軌 94.65 元則不再等反彈、全數出清</b>（其下 52 週低點 90.20 元）。⚠ PB 4.37 倍、每股淨值僅 22.86 元，下檔沒有淨值保護；成交量約 1,159 張、20 日均量 1,694 張，務必分批。</span></div>
+<div class="pos">
+<div class="ph2">你的部位</div>
+1 張・成本 126.68　現值 99,500　未實現 <b class="dn">-27,180（-21.46%）</b>
+<div class="pw">上方「持有」＝分批出場，換算成 1 張（共 1 張，留 0 張）；以現價 99.50 元計，這 1 張實現 -27,180 元</div>
+<div class="pn">⚠ 成本對照：解套價 126.68 元高於出場上緣 100.85 元 —— 在這個區間執行會實現虧損，金額如上。</div>
+</div>
+<div class="sim" data-c="1514" data-px="99.5" data-sz0="94.7" data-sz1="100.9" data-ma5="101.5" data-ma20="100.846" data-hk="h-exit" data-slab="出場區間" data-szone="94.7 – 100.9 元"><div class="sh"><b>💰 成本模擬</b><span>已用 inputs/positions.py 的實際成本 126.68 元預填，可改成別的數字試算（不改變上方日報建議）</span></div><div class="simrow"><input type="number" inputmode="decimal" step="any" min="0" placeholder="每股成本（元）" aria-label="亞力 持有成本" value="126.68"><button type="button" class="simx">清除</button></div><div class="simout" hidden></div></div>
+<div class="tp"><b>⏳ 時間壓力</b>：2026Q2 已公告（EPS 0.91 元）；下一次財報為 2026Q3、法定期限約 11/14；2026/07/30 已除權息（現金 2 元＋股票 0.2 元，現金 09/04 發放，新股上市日查無）</div>
+</div>
+</div>
+<div class="foot"><h3>這頁在做什麼</h3><p>把 <b>2026-08-18 日報</b>訂下的買賣區間與條件，拿去比對<b>當下的報價</b>，只輸出「現在該做什麼」。均線、布林通道、20 日均量等技術位一律沿用日報基準日的收盤計算值，<b>不用盤中未完成的 K 棒重算</b>；頁面上只有價格、漲跌、成交量是即時的。判斷邏輯固定：價格落在買進區間內＝可分批買、高於區間＝等回檔、跌破區間下緣＝支撐失守先別接；持有則依序檢查是否進入停利／減碼／出場區間、是否跌破月線、是否跌破 5 日線。</p><h3>成本模擬怎麼算</h3><p>各卡片的「成本模擬」只在你的瀏覽器內計算（輸入值存在本機瀏覽器，頁面重新產生後仍保留，不會上傳）。報酬率＝現價÷成本−1；每張帳面損益＝（現價−成本）×1,000，未含費用；損益兩平價＝成本×1.00585（買賣手續費各 0.1425% 加證交稅 0.3%）。模擬規則：日報已判「減碼／出場」者不因成本高低翻案；獲利且已進停利區＝分批停利、獲利達 15% 可提前部分停利、虧損 5% 進入警戒、虧損 10% 觸及停損紀律（並以月線為最後防線）。此為規則式試算，非投資建議。</p><h3>報價來源與延遲</h3><p>Yahoo Finance 即時報價（2026-08-19 13:30），台股報價通常有數分鐘至 15 分鐘延遲，成交量為當日累計。本頁每次執行都會整份覆蓋，不保留歷史。</p><h3>免責聲明</h3><p>本頁由自動化流程產生，僅供研究與教育參考，不構成投資建議、要約或招攬，亦不保證資料之完整性、即時性與正確性。實際下單前請自行以券商報價複核價格，投資有風險，讀者應自行判斷並承擔所有投資決策之後果。</p></div>
+</div>
+<p style="text-align:center;color:#7a8798;font-size:11.5px;margin:14px 0 20px">產生時間 2026-08-19 14:11（台北時間）</p>
 <script>
-/* ★ 成本試算器（守則第 20.4 節）——只重算「換算層」。
-   空手／持有兩行由 Python 產生後即不再更動，JS 完全不碰它們。
-   act（出場／減碼／續抱…）由現價對區間決定，已在 Python 算好，這裡不重算。 */
 (function(){
-var D=[{"code": "2603", "name": "長榮", "px": 240.5, "lots": 1.0, "cost": 193.28, "div_ps": 0.0, "act": "trim", "title": "分批停利", "lab": "停利", "sell_lo": 230.05, "sell_hi": 242.5, "buy_lo": 216.7, "buy_hi": 223.7, "stop": 210.3}, {"code": "1504", "name": "東元", "px": 71.8, "lots": 2.0, "cost": 84.62, "div_ps": 0.0, "act": "keep", "title": "續抱", "lab": "停利", "sell_lo": 72.42, "sell_hi": 79.78, "buy_lo": 68.5, "buy_hi": 69.72, "stop": 66.76}, {"code": "1514", "name": "亞力", "px": 99.5, "lots": 1.0, "cost": 126.68, "div_ps": 0.0, "act": "trim", "title": "分批出場", "lab": "出場", "sell_lo": 94.65, "sell_hi": 100.85, "buy_lo": null, "buy_hi": null, "stop": 94.65}], LOT=1000, TRIM=0.3333333333333333;
-function cm(v,d){d=d||0;return (v<0?"-":"")+Math.abs(v).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});}
-function nf(v,d){d=(d===undefined)?2:d;return Math.abs(v)>=1000?cm(v,d):v.toFixed(d);}
-function money(v){return (v>0?"+":"")+cm(Math.round(v));}
-function halfUp(x){return Math.floor(x+0.5);}
-function trimLots(n){return Math.max(1,Math.min(Math.floor(n),halfUp(n*TRIM)));}
-function calc(s,cost,lots){
- var px=s.px, be=cost-s.div_ps, sh=lots*LOT;
- var o={be:be,lots:lots,cv:sh*cost,mv:sh*px,inProfit:px>=be};
- o.pl=o.mv-o.cv; o.plPct=cost?((px/cost-1)*100):0;
- o.act=(lots>0)?s.act:"none";
- if(o.act==="exit"){o.n=lots;}
- else if(o.act==="trim"){o.n=trimLots(lots);}
- else {o.n=0;}
- o.realized=(o.act==="exit"||o.act==="trim")?(px-cost)*o.n*LOT:0;
- return o;
+"use strict";
+var FEE=1.00585; // 買賣手續費各 0.1425% ＋ 證交稅 0.3%
+function n1(x){return (x>=0?"+":"")+x.toFixed(1);}
+function f2(x){return x.toLocaleString("zh-Hant-TW",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function money(x){return (x>=0?"+":"-")+Math.abs(Math.round(x)).toLocaleString("zh-Hant-TW");}
+function kls(x){return x>0?"up":(x<0?"dn":"");}
+function advise(d,cost,px){
+  var ret=(px/cost-1)*100, be=cost*FEE;
+  var ma5=parseFloat(d.ma5)||null, ma20=parseFloat(d.ma20)||null;
+  var sz0=d.sz0?parseFloat(d.sz0):null, slab=d.slab, szone=d.szone;
+  var dist=(sz0&&px<sz0)?("距"+slab+"下緣 "+f2(sz0)+" 元還有 "+n1((sz0/px-1)*100)+"%。"):"";
+  var cls,act,why;
+  if(d.hk==="h-exit"||d.hk==="h-cut"){
+    var verb=d.hk==="h-exit"?"出場":"減碼";
+    if(ret>=0){cls="a-sell";act="尚有獲利 "+n1(ret)+"%，趁獲利依日報建議"+verb;
+      why="日報結論已是「"+verb+"」，持有成本再低也不改變趨勢轉弱的判斷；趁還有獲利執行，優於之後被迫停損。";}
+    else{cls="a-cut";act="已虧損 "+n1(ret)+"%，仍應依日報建議"+verb+"，別等回本";
+      why="損益兩平價 "+f2(be)+" 元只是你的成本記號，不是技術支撐；"+verb+"的理由與你的成本無關，凹單只會擴大虧損。";}
+  }else if(sz0!==null&&px>=sz0){
+    if(ret>0){cls="a-sell";act="已進"+slab+"且獲利 "+n1(ret)+"%，分批停利";
+      why="價格已在 "+szone+" 內，獲利入袋優先；其餘部位依原訂移動停利條件。";}
+    else{cls="a-warn";act="價格已到"+slab+"，但你仍虧損 "+n1(ret)+"%——視為減損出場機會";
+      why="成本比"+slab+"還高，別為了回本而凹單；依原訂條件處理"+(ma5?"，跌破 5 日線 "+f2(ma5)+" 元先減碼":"")+"。";}
+  }else if(ret<=-10){
+    if(ma20&&px<ma20){cls="a-cut";act="虧損 "+n1(ret)+"% 且已破月線，建議分批停損";
+      why="虧損超過 10% 停損紀律，月線 "+f2(ma20)+" 元也已失守；攤平或等反彈只會擴大風險。";}
+    else{cls="a-cut";act="虧損 "+n1(ret)+"% 已觸停損紀律，月線失守即出";
+      why="一般停損紀律為 -10%"+(ma20?"；月線 "+f2(ma20)+" 元是最後防線，跌破不要再等":"")+"。";}
+  }else if(ret<=-5){
+    cls="a-warn";act="虧損 "+n1(ret)+"%，進入警戒區";
+    why=(ma20?"先守月線 "+f2(ma20)+" 元；":"")+"虧損擴大到 10% 就應執行停損，別讓小虧變大虧。"+dist;
+  }else if(ret<0){
+    cls="a-hold";act="小幅虧損 "+n1(ret)+"%，依上方原建議操作";
+    why="損益兩平價約 "+f2(be)+" 元（含費）。"+dist;
+  }else if(ret<5){
+    cls="a-hold";act="小幅獲利 "+n1(ret)+"%，續抱等"+slab;
+    why="可把防守價設在損益兩平 "+f2(be)+" 元附近，避免由盈轉虧。"+dist;
+  }else if(ret<15){
+    cls="a-hold";act="獲利 "+n1(ret)+"%，續抱等"+slab+"，防守價上移";
+    why="防守價可上移到 "+f2(Math.max(ma5||0,be))+" 元（5 日線與損益兩平取高者），鎖住既有獲利。"+dist;
+  }else{
+    cls="a-sell";act="獲利已達 "+n1(ret)+"%，可先分批停利，不必等"+slab;
+    why="雖未進 "+szone+"，但保護獲利優先——先出一部分，其餘依原訂移動停利條件。"+dist;
+  }
+  return {ret:ret,be:be,cls:cls,act:act,why:why};
 }
-function render(s,cost,lots,dirty){
- var o=calc(s,cost,lots), px=s.px, t;
- var posEl=document.querySelector('[data-pos="'+s.code+'"]');
- var cvEl=document.querySelector('[data-conv="'+s.code+'"]');
- if(!posEl||!cvEl)return o;
- var k=o.pl>0?"up":(o.pl<0?"dn":"flat");
- posEl.innerHTML='<span>持有 <b>'+o.lots.toFixed(0)+' 張</b></span><span>成本 <b>'+nf(cost)+'</b></span>'
-  +'<span>現值 <b>'+cm(o.mv)+'</b></span><span class="'+k+'">未實現 <b>'+money(o.pl)
-  +' 元（'+(o.plPct>0?"+":"")+o.plPct.toFixed(2)+'%）</b></span>'
-  +(dirty?'<span class="simtag">試算</span>':'');
- if(o.act==="none"){t='目前無持倉 —— 依上方「空手」結論處理';}
- else if(o.act==="exit"){t='上方結論＝出場，換算成 <b>'+o.n.toFixed(0)+' 張（全部）</b>；以現價 '+px.toFixed(2)
-  +' 元計，這一筆實現 <b>'+money(o.realized)+' 元</b>';}
- else if(o.act==="trim"){t='上方結論＝'+s.title+'，換算成 <b>'+o.n.toFixed(0)+' 張</b>（共 '+o.lots.toFixed(0)
-  +' 張，留 '+(o.lots-o.n).toFixed(0)+' 張）；以現價 '+px.toFixed(2)+' 元計，這 '+o.n.toFixed(0)
-  +' 張實現 <b>'+money(o.realized)+' 元</b>';}
- else if(o.act==="trail"){t='上方結論＝改移動停利，<b>'+o.lots.toFixed(0)+' 張全數保留</b>，這個價位不減';}
- else if(o.act==="addzone"){t='上方結論＝可買進，<b>現價在加碼區間 '+s.buy_lo.toFixed(2)+' – '+s.buy_hi.toFixed(2)
-  +' 元內</b>（每 1 張約需 <b>'+cm(px*LOT)+' 元</b>）；<b>加幾張由你自己決定</b>，本頁不算張數。手上已有 '
-  +o.lots.toFixed(0)+' 張';}
- else {t='上方結論＝續抱，<b>'+o.lots.toFixed(0)+' 張不動</b>';}
- if(!o.inProfit&&px){t+='　·　距解套價 '+o.be.toFixed(2)+' 元還要漲 '+((o.be/px-1)*100).toFixed(1)+'%';}
- if(s.sell_hi&&o.be>s.sell_hi){
-  t+='<span class="pw">成本對照：解套價 '+o.be.toFixed(2)+' 元高於'+s.lab+'上緣 '+s.sell_hi.toFixed(2)
-   +' 元 —— 在這個區間執行會實現虧損，金額如上。</span>';
- }else if(s.sell_lo&&o.be<=s.sell_lo&&(o.act==="trim"||o.act==="trail")){
-  t+='<span class="pw">成本對照：解套價 '+o.be.toFixed(2)+' 元低於'+s.lab+'下緣 '+s.sell_lo.toFixed(2)
-   +' 元 —— 整段區間都在成本之上，執行即為實現獲利。</span>';
- }else if(s.buy_lo&&s.stop&&s.buy_lo<s.stop&&s.stop<=(s.buy_hi||0)){
-  t+='<span class="pw">價位對照：買進區間下緣 '+s.buy_lo.toFixed(2)+' 元低於出場價 '+s.stop.toFixed(2)+' 元，兩者重疊。</span>';
- }
- cvEl.innerHTML=t;
- return o;
-}
-function totals(){
- var cv=0,mv=0,todo=0;
- D.forEach(function(s){
-  var box=document.querySelector('[data-sim="'+s.code+'"]');
-  var c=parseFloat(box.querySelector('[data-f=cost]').value),
-      l=parseFloat(box.querySelector('[data-f=lots]').value);
-  if(!isFinite(c)||c<=0)c=s.cost; if(!isFinite(l)||l<0)l=s.lots;
-  var dirty=(Math.abs(c-s.cost)>1e-9)||(Math.abs(l-s.lots)>1e-9);
-  box.classList.toggle("simon",dirty);
-  var o=render(s,c,l,dirty);
-  cv+=o.cv; mv+=o.mv;
-  if(o.act==="exit"||o.act==="trim")todo++;
- });
- var bar=document.querySelector(".sum");
- if(bar){var pl=mv-cv, k=pl>0?"up":(pl<0?"dn":"flat");
-  bar.innerHTML='<div class="sr"><span>投入成本</span><b>'+cm(cv)+'</b></div>'
-   +'<div class="sr"><span>目前市值</span><b>'+cm(mv)+'</b></div>'
-   +'<div class="sr '+k+'"><span>未實現損益</span><b>'+money(pl)+' 元（'
-   +(cv?((pl/cv*100)>0?"+":""):"")+(cv?(pl/cv*100).toFixed(2):"0.00")+'%）</b></div>'
-   +'<div class="sr"><span>有動作的檔數</span><b>'+(todo?todo+" 檔有動作":"無，全部續抱")+'</b></div>';}
-}
-document.addEventListener("input",function(e){if(e.target.closest(".sim"))totals();});
-document.addEventListener("click",function(e){
- var b=e.target.closest('[data-f=reset]'); if(!b)return;
- var box=b.closest(".sim"), s=D.filter(function(x){return x.code===box.dataset.sim;})[0];
- box.querySelector('[data-f=cost]').value=s.cost?s.cost.toFixed(2):"";
- box.querySelector('[data-f=lots]').value=s.lots?s.lots.toFixed(0):"";
- totals();
+document.querySelectorAll(".sim").forEach(function(el){
+  var d=el.dataset, inp=el.querySelector("input"), out=el.querySelector(".simout"),
+      clr=el.querySelector(".simx"), key="livecost:"+d.c, px=parseFloat(d.px);
+  function render(){
+    var cost=parseFloat(inp.value);
+    if(!(cost>0)||!(px>0)){out.hidden=true;try{localStorage.removeItem(key);}catch(e){}return;}
+    try{localStorage.setItem(key,inp.value);}catch(e){}
+    var r=advise(d,cost,px), pl=(px-cost)*1000;
+    var html='<div class="simstat">報酬率 <b class="'+kls(r.ret)+'">'+n1(r.ret)+'%</b>　'
+      +'每張帳面損益 <b class="'+kls(pl)+'">'+money(pl)+' 元</b>　'
+      +'含費損益兩平 '+f2(r.be)+' 元</div>'
+      +'<div class="simadv '+r.cls+'">'+r.act+'<span class="sw">'+r.why+'</span></div>';
+    if(cost>px*4||cost<px/4)html+='<div class="simwarn">⚠ 成本與現價差距超過 4 倍，'
+      +'請確認是否輸入錯誤（例如把總金額當成每股成本）。</div>';
+    out.innerHTML=html;out.hidden=false;
+  }
+  inp.addEventListener("input",render);
+  clr.addEventListener("click",function(){inp.value="";render();});
+  // ★ MySelf 專屬：inputs/positions.py 已把真實每股成本預填進 value，
+  //   因此 localStorage 沒存過也要算一次（原版只在 localStorage 有值時才算）。
+  try{var s=localStorage.getItem(key);if(s){inp.value=s;}}catch(e){}
+  if(inp.value){render();}
 });
 })();
 </script>
-<div class="foot">
- <p><b>這一頁只回答「現在該怎麼做」</b>：拿最近一期收盤報告訂下的買賣區間與出場價，
- 對照證交所即時報價（MIS，延遲約 5~20 秒），判斷現價落在哪一段。
- <b>不重算五面向評分、不抓籌碼與財報</b>——盤中資料不足以改變評分，評分一律以收盤後的正式報告為準。</p>
- <p><b>⚠ 盤中判斷務必留意</b>：①未收盤前的量能只是累積值，與收盤後的量比不能直接比較；
- ②突破或跌破在收盤前都可能被打回，建議至少等尾盤再確認；
- ③本頁每次執行都會覆蓋，顯示的是產生當下的狀態，不會自動更新，請重新執行取得最新。</p>
- <p>本頁由自動化流程彙整公開資訊產生，僅供研究與教育參考，不構成投資建議。投資有風險，過去績效不代表未來表現。</p>
-</div>
+</body>
+</html>
