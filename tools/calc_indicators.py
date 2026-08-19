@@ -82,6 +82,122 @@ def pstd(a):
 ret = lambda cl, k: (cl[-1] / cl[-1 - k] - 1) * 100 if len(cl) > k else None
 
 
+# ── DMA（2026-08-19 新增）────────────────────────────────────────────
+# DMA = SMA(短) − SMA(長)，AMA = SMA(DMA, 短)。三組週期：3-6、6-12、5-20。
+# 判讀只看三件客觀事實：DMA 在零軸上／下、DMA 與 AMA 的相對位置、當日是否剛交叉。
+# 不做主觀解讀，也不產生買賣建議——那是 zones.py 的職責。
+DMA_PAIRS = ((3, 6), (6, 12), (5, 20))
+
+
+def sma_series(a, k):
+    """滾動 k 期簡單移動平均；不足 k 期者為 None"""
+    out = [None] * len(a)
+    if k <= 0:
+        return out
+    s = 0.0
+    for i, x in enumerate(a):
+        s += x
+        if i >= k:
+            s -= a[i - k]
+        if i >= k - 1:
+            out[i] = s / k
+    return out
+
+
+def dma_block(cl):
+    """回傳 {'3-6': {...}, '6-12': {...}, '5-20': {...}}"""
+    out = {}
+    for short, long_ in DMA_PAIRS:
+        key = "%d-%d" % (short, long_)
+        ms, ml = sma_series(cl, short), sma_series(cl, long_)
+        dma = [(a - b) if (a is not None and b is not None) else None
+               for a, b in zip(ms, ml)]
+        valid = [x for x in dma if x is not None]
+        if len(valid) < short + 2:
+            out[key] = None
+            continue
+        ama = sma_series(valid, short)
+        d0, d1 = valid[-1], valid[-2]
+        a0, a1 = ama[-1], ama[-2]
+        if a0 is None or a1 is None:
+            out[key] = None
+            continue
+        if d0 > a0 and d1 <= a1:
+            cross = "黃金交叉"
+        elif d0 < a0 and d1 >= a1:
+            cross = "死亡交叉"
+        else:
+            cross = "無"
+        out[key] = {"dma": d0, "dma_prev": d1, "ama": a0, "ama_prev": a1,
+                    "above_zero": d0 > 0, "above_ama": d0 > a0,
+                    "cross": cross, "rising": d0 > d1}
+    return out
+
+
+# ── MACD 背離（2026-08-19 新增）──────────────────────────────────────
+# 定義（以 MACD 柱狀體 OSC 為指標序列，價格用實際的 high／low）：
+#   頂背離     價格較前波高點更高，OSC 較前波更低   → 漲勢動能衰退
+#   底背離     價格較前波低點更低，OSC 較前波更高   → 跌勢動能衰退
+#   隱性頂背離 價格較前波高點更低，OSC 較前波更高   → 反彈無力，原趨勢（空）可能延續
+#   隱性底背離 價格較前波低點更高，OSC 較前波更低   → 回檔有撐，原趨勢（多）可能延續
+# ★ 轉折點採「左右各 PIVOT_K 根都不更極端」的分形定義，故最近 PIVOT_K 根內的轉折
+#   尚未確認、不會被判入（這是刻意的：未確認的轉折會反覆改寫，等同盤中未完成 K 棒）。
+# ★ 兩個轉折點的間隔須在 PIVOT_MIN_GAP ~ PIVOT_MAX_GAP 根之間，否則不成立。
+#   已實測驗證的參數行為（2026-08-19）：
+#   - PIVOT_MAX_GAP 會實際綁到（gap 60 成立、61 不成立），是有效的過濾器。
+#   - PIVOT_MIN_GAP 在 PIVOT_K = 5 之下**永遠不會綁到**：間隔 <= PIVOT_K 時兩點不可能
+#     同時是分形極值（彼此落在對方視窗內而互相排除），故結構上最小間隔恆為 PIVOT_K + 1 = 6。
+#     這個參數只有在把 PIVOT_K 調到小於 PIVOT_MIN_GAP 時才有作用，保留以備調參。
+PIVOT_K = 5
+PIVOT_MIN_GAP = 5
+PIVOT_MAX_GAP = 60
+
+
+def pivot_idx(vals, k, want_high):
+    """分形轉折點索引；want_high=True 找轉折高，False 找轉折低"""
+    out = []
+    for i in range(k, len(vals) - k):
+        w = vals[i - k:i + k + 1]
+        if (vals[i] == max(w) if want_high else vals[i] == min(w)) and w.count(vals[i]) == 1:
+            out.append(i)
+    return out
+
+
+def macd_div(rows, osc):
+    """回傳 {'top': {...}|None, 'bottom': {...}|None}"""
+    hi = [r["h"] for r in rows]
+    lo = [r["l"] for r in rows]
+    n = len(rows)
+    res = {}
+    for side, vals, want_high in (("top", hi, True), ("bottom", lo, False)):
+        piv = pivot_idx(vals, PIVOT_K, want_high)
+        hit = None
+        if len(piv) >= 2:
+            a, b = piv[-2], piv[-1]
+            gap = b - a
+            if PIVOT_MIN_GAP <= gap <= PIVOT_MAX_GAP:
+                pa, pb, oa, ob = vals[a], vals[b], osc[a], osc[b]
+                kind = None
+                if want_high:
+                    if pb > pa and ob < oa:
+                        kind = "頂背離"
+                    elif pb < pa and ob > oa:
+                        kind = "隱性頂背離"
+                else:
+                    if pb < pa and ob > oa:
+                        kind = "底背離"
+                    elif pb > pa and ob < oa:
+                        kind = "隱性底背離"
+                if kind:
+                    hit = {"kind": kind,
+                           "prev_date": rows[a]["d"], "last_date": rows[b]["d"],
+                           "prev_price": pa, "last_price": pb,
+                           "prev_osc": oa, "last_osc": ob,
+                           "gap_bars": gap, "bars_since": n - 1 - b}
+        res[side] = hit
+    return res
+
+
 def analyze(rows, label):
     cl = [r["c"] for r in rows]
     vol = [r["v"] for r in rows]
@@ -124,6 +240,8 @@ def analyze(rows, label):
             "r1": ret(cl, 1), "r5": ret(cl, 5), "r20": ret(cl, 20), "r60": ret(cl, 60),
             "r120": ret(cl, 120), "r240": ret(cl, 240),
             "ytd": (cl[-1] / py[-1]["c"] - 1) * 100 if py else None,
+            "dma": dma_block(cl),
+            "macd_div": macd_div(rows, osc),
             "spark": [{"d": r["d"], "c": r["c"]} for r in rows[-20:]], "n": len(rows)}
 
 

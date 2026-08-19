@@ -70,6 +70,59 @@ def market_score(env_score, rs):
     return half_up(env_score * .5 + rs * .5)
 
 
+# ── 技術面客觀加減分（2026-08-19 新增）────────────────────────────
+# ★ 只納入「scores.py 手評技術分未涵蓋的新事件」，嚴禁重複計分：
+#   - 均線排列／KD／RSI／乖離率／布林／量價配合 已在手評分內判讀 → 一律不計。
+#   - DMA 只計「當日交叉」這個離散事件；**不計零軸與 AMA 的位置**，
+#     因為位置等同於均線多頭／空頭排列，計了就是把趨勢算兩次
+#     （實測會讓最過熱的個股反而加分，方向錯誤）。
+#   - MACD 背離採分級衰減而非硬性截斷：轉折確認後訊號會鈍化但不會瞬間失效。
+DIV_ADJ = {"頂背離": -6.0, "底背離": 6.0, "隱性頂背離": -3.0, "隱性底背離": 3.0}
+DIV_FULL_BARS = 10     # <= 此根數：全權
+DIV_HALF_BARS = 20     # <= 此根數：半權；超過則不計分
+DMA_CROSS_ADJ = 2.0    # 單組 DMA 當日交叉的加減分
+TECH_ADJ_CAP = 10      # 合計封頂，避免單一機械訊號蓋過整體判讀
+
+
+def tech_adj(a):
+    """回傳 (adj, 明細 list)。adj 為整數，範圍 ±TECH_ADJ_CAP。
+
+    MACD 背離：頂／底同時出現時自然相加抵銷（訊號互相衝突＝不給方向）。
+    DMA 三組：只看當日是否交叉，每組 ±DMA_CROSS_ADJ。
+    """
+    items, total = [], 0.0
+    for side in ("top", "bottom"):
+        h = (a.get("macd_div") or {}).get(side)
+        if not h:
+            continue
+        base = DIV_ADJ.get(h["kind"], 0.0)
+        b = h["bars_since"]
+        if b <= DIV_FULL_BARS:
+            v, tag = base, ""
+        elif b <= DIV_HALF_BARS:
+            v, tag = base / 2, "半權"
+        else:
+            items.append("%s（%d 根前，逾 %d 根不計分）" % (h["kind"], b, DIV_HALF_BARS))
+            continue
+        total += v
+        items.append("%s %s%.1f%s" % (h["kind"], "＋" if v >= 0 else "−", abs(v),
+                                      ("・" + tag) if tag else ""))
+    for key in ("3-6", "6-12", "5-20"):
+        d = (a.get("dma") or {}).get(key)
+        if not d or d["cross"] == "無":
+            continue
+        v = DMA_CROSS_ADJ if d["cross"] == "黃金交叉" else -DMA_CROSS_ADJ
+        total += v
+        items.append("DMA %s %s %s%.0f" % (key, d["cross"],
+                                           "＋" if v >= 0 else "−", abs(v)))
+    adj = half_up(max(-TECH_ADJ_CAP, min(TECH_ADJ_CAP, total)))
+    if abs(total) > TECH_ADJ_CAP:
+        items.append("合計 %s%.1f，封頂至 %s%d"
+                     % ("＋" if total >= 0 else "−", abs(total),
+                        "＋" if adj >= 0 else "−", abs(adj)))
+    return adj, items
+
+
 def rs_score(ex5, ex20, ex60):
     """RS 分 = 50 + clamp(ex5×1.0 + ex20×1.2 + ex60×0.6, -35, +35)，再 clamp 15~85"""
     raw = ex5 * 1.0 + ex20 * 1.2 + ex60 * 0.6
