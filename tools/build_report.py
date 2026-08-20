@@ -20,7 +20,8 @@ sys.path.insert(0, BASE)
 sys.path.insert(0, os.path.join(BASE, "inputs"))
 import config as C
 from lib import (n, cm, sgn, cls, num_td, band_of, scls, total_score, market_score, tech_adj,
-                 spark, mc, twrap, mabar, chip, opbox, pl, position_plan, MA_LABEL)
+                 tech_anchor, TECH_ANCHOR_TOL, spark, mc, twrap, mabar, chip, opbox,
+                 pl, position_plan, MA_LABEL)
 import market as MK
 from scores import S, FUND, ADV
 from zones import ZONE, LIVE
@@ -79,11 +80,19 @@ def div_cell(a):
 
 # ── 大盤面分一律由公式計算，覆寫 inputs 中的值（避免主觀給分）──
 # ── 技術面分 = inputs 判讀分 + DMA／MACD 背離的客觀加減分（lib.tech_adj，±10 封頂）──
+# ── 另檢查判讀分是否落在錨定區間 ±TECH_ANCHOR_TOL 內（lib.tech_anchor，守則 §9.0）：
+#    超出印警告提醒複查（超出區間 ±5 依守則須在 scores.py 寫明理由），
+#    只提醒、不覆寫判讀分、不進報告 ──
 TADJ = {}
 for c in C.CODES:
     rs = IND["stocks"][c]["rs"]
     adj, why = tech_adj(IND["stocks"][c])
     TADJ[c] = (S[c][1], adj, why)
+    lo, hi, ref = tech_anchor(IND["stocks"][c])
+    if not (lo - TECH_ANCHOR_TOL <= S[c][1] <= hi + TECH_ANCHOR_TOL):
+        print("   ⚠ %s 技術判讀分 %d 超出錨定區間 %d~%d 逾 ±%d（區間內參考落點 %d）"
+              "→ 依守則 §9.0 複查，維持須在 scores.py 寫明理由"
+              % (c, S[c][1], lo, hi, TECH_ANCHOR_TOL, ref))
     S[c] = (S[c][0], max(0, min(100, S[c][1] + adj)), S[c][2],
             market_score(MK.ENV_SCORE, rs), S[c][4])
 TOT = {c: total_score(S[c]) for c in C.CODES}

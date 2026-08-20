@@ -123,6 +123,48 @@ def tech_adj(a):
     return adj, items
 
 
+# ── 技術判讀分的錨定區間（2026-08-20 新增，守則 §9.0）───────────────
+# ★ 只做防呆對照：build_report.py 建置時檢查「手評判讀分是否落在錨定區間
+#   ±TECH_ANCHOR_TOL 內」，超出就印警告提醒複查（守則規定超出區間 ±5 必須
+#   在 scores.py 寫明理由）；只警告、不覆寫、不進報告。
+#   目的：判讀分必須錨定「當日絕對狀態」，防止連跌期間對同一事實逐日重複扣分
+#   的棘輪下漂（08/11→08/19 判讀分平均 62→43.8，但同日 8/9 檔仍站上月線、
+#   8/9 檔 MACD 柱在零軸上、RSI 全落 44~56 中性區）。
+#   區間主要由「站上均線條數」決定（與 §9.0 對照表同一套），不做 0~100 合成分
+#   ——實測合成分在強多頭族群會頂到 95~100，與對照表上緣 85 的尺度打架、狂誤報。
+TECH_ANCHOR_TOL = 5
+
+
+def tech_anchor(a):
+    """回傳 (lo, hi, ref)：守則 §9.0 的錨定區間與區間內參考落點。
+
+    區間依站上均線條數：6/6→72~85｜4~5/6→58~70｜2~3/6→45~57（若月線季線
+    皆破則降至 30~44）｜0~1/6→30~44（爆量下跌或貼近 52 週低 →15~29）。
+    ref 用動能合成（KD／MACD／RSI／量價／距52週高／r20 各 10）在區間內定位，僅供參考。
+    """
+    above = sum(1 for k in ("5", "10", "20", "60", "120", "240")
+                if a["close"] > a["ma"][k])
+    if above >= 6:
+        lo, hi = 72, 85
+    elif above >= 4:
+        lo, hi = 58, 70
+    elif above >= 2:
+        lo, hi = (30, 44) if (a["close"] < a["ma"]["20"] and
+                              a["close"] < a["ma"]["60"]) else (45, 57)
+    elif (a["chg_pct"] < 0 and a["vr"] >= 2) or a["from_lo52"] < 5:
+        lo, hi = 15, 29
+    else:
+        lo, hi = 30, 44
+    m = (6 if a["k"] > a["d"] else 0) + (4 if a["k"] > a["k_prev"] else 0)
+    m += (6 if a["osc"] > 0 else 0) + (4 if a["osc"] >= a["osc_prev"] else 0)
+    m += max(0.0, min(1.0, (a["rsi"] - 30) / 40)) * 10        # RSI 30→0 分、70→10 分
+    up, has_vol = a["chg_pct"] >= 0, a["vr"] >= 1
+    m += 10 if (up and has_vol) else 4 if up else 6 if not has_vol else 0
+    m += max(0.0, min(1.0, 1 + a["from_hi52"] / 50)) * 10     # 距52週高 0%→10、−50%→0
+    m += max(0.0, min(1.0, (a["r20"] + 10) / 20)) * 10        # r20 −10%→0、+10%→10
+    return lo, hi, half_up(lo + m / 60.0 * (hi - lo))
+
+
 def rs_score(ex5, ex20, ex60):
     """RS 分 = 50 + clamp(ex5×1.0 + ex20×1.2 + ex60×0.6, -35, +35)，再 clamp 15~85"""
     raw = ex5 * 1.0 + ex20 * 1.2 + ex60 * 0.6
