@@ -1,9 +1,9 @@
 {
- "quote_time": "2026-08-20 10:20",
- "gen_time": "2026-08-20 10:20",
+ "quote_time": "2026-08-20 10:47",
+ "gen_time": "2026-08-20 10:47",
  "phase": "盤中",
  "base_date": "2026-08-19",
- "alerts": 8,
+ "alerts": 9,
  "source": "玩股網",
  "lag_min": 0,
  "delayed": false
