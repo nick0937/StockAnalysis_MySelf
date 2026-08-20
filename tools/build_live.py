@@ -276,7 +276,18 @@ for c in C.CODES:
     #   就講成「續抱」，否則會與日報結論互相矛盾。
     h_kind = ADV[c][3]                      # h-tp / h-cut / h-exit
     base = {"h-exit": "出場", "h-cut": "減碼"}.get(h_kind, "停利")
-    if sz and px > sz[1]:
+    # ★ MySelf 專屬：帶量突破上緣時，日報訂的是「改移動停利、不要機械式賣光」，
+    #   不可講成「優先執行」——否則會與同一張卡片下方由 lib.position_plan 算出的
+    #   「改移動停利、N 張不動」互相矛盾。門檻與 position_plan 一致（量比 ≥ 1.5）。
+    if sz and px > sz[1] and h_kind == "h-tp" and vr is not None and vr >= 1.5:
+        h_cls = "a-hold"
+        h_act = "帶量突破%s上緣，改移動停利、不要機械式賣光" % z["sell_lab"]
+        h_why = ("量比 %.2f 倍 ≥ 1.5 且已站上上緣 %s 元——依日報這是「趨勢轉強而非反彈」，"
+                 "既有部位改用移動停利跟著走，不在此價位機械式賣光。%s"
+                 % (vr, fmt(sz[1]), z["sell_cond"]))
+        ALERTS.append((c, "警", "帶量站上%s上緣 %s 元（量比 %.2f 倍）→ 改移動停利"
+                       % (z["sell_lab"], fmt(sz[1]), vr)))
+    elif sz and px > sz[1]:
         h_cls = "a-sell"
         h_act = "已高於%s上緣，優先執行" % z["sell_lab"]
         h_why = "%s %s（%s）。%s" % (z["sell_lab"], z["sell_zone"], z["sell_anchor"], z["sell_cond"])
@@ -333,7 +344,7 @@ for c in C.CODES:
     plan = position_plan(px, lv, p, vr, TRIM_FRAC) if p else None
     if plan and plan["act"] in ("exit", "trim"):
         ALERTS.append((c, "倉", "你的部位：%s %g 張（以現價計實現 %s 元）"
-                       % (plan["title"], plan["lots"], plan.get("realized") or 0)))
+                       % (plan["title"], plan["lots"], mny(plan.get("realized")))))
 
     if c in C.TIME_PRESSURE:
         ALERTS.append((c, "時", C.TIME_PRESSURE[c].split("、")[0]))
