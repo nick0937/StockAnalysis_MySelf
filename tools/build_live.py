@@ -17,7 +17,8 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE)
 sys.path.insert(0, os.path.join(BASE, "inputs"))
 import config as C
-from lib import total_score, market_score, band_of, pl as pl_calc, position_plan
+from lib import (total_score, market_score, band_of, tech_adj,
+                 pl as pl_calc, position_plan)
 import market as MK
 from scores import S, ADV
 # ★ MySelf 專屬：LIVE 為結構化價位、positions 為實際持倉（守則第 19.4／20 節）
@@ -30,9 +31,12 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
 LIVE_DIR = os.path.join(C.REPO, "live")
 
-# 綜合分（與日報一致：大盤面由公式覆寫）
+# 綜合分（與日報一致：大盤面由公式覆寫、技術面加上 §9.1 的客觀加減分）
+# ★ 修正：原本直接用 scores.S 的技術「判讀分」，漏掉 lib.tech_adj 的客觀加減分，
+#   會讓即時頁的「日報 N 分」比日報本身少 1 分（守則 §9.1：手填無效、一律由程式套用）。
 for c in C.CODES:
-    S[c] = (S[c][0], S[c][1], S[c][2],
+    _adj, _ = tech_adj(IND["stocks"][c])
+    S[c] = (S[c][0], max(0, min(100, S[c][1] + _adj)), S[c][2],
             market_score(MK.ENV_SCORE, IND["stocks"][c]["rs"]), S[c][4])
 TOT = {c: total_score(S[c]) for c in C.CODES}
 
