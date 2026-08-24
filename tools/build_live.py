@@ -255,7 +255,17 @@ for c in C.CODES:
     up_ma = sum(1 for k in ("5", "10", "20", "60", "120", "240")
                 if a["ma"].get(k) and px and px >= a["ma"][k])
 
-    bz, sz = bounds(z["buy_zone"]), bounds(z["sell_zone"])
+    # ★ 區間比對一律用 zones.LIVE 的精確錨點，不要用文字區間。
+    #   ⚠ 2026-08-24 修：原本用 bounds(z["buy_zone"]) 解析四捨五入後的文字，
+    #   「70.3 – 72.0 元」的上緣被讀成 72.0，而真正的錨點是 5 日線 71.98——
+    #   現價 72.00 明明高於錨點卻被判成「在區間內」，而且因為文字上 buy 上緣
+    #   等於 sell 下緣（都 72.0），同一個價格會同時觸發「進入買進區間」與「進入減碼區間」。
+    #   LIVE 就是為機械判斷而存在的（守則 §19.4），文字區間只負責顯示。
+    _lv = LIVE[c]
+    bz = ((_lv["buy_lo"], _lv["buy_hi"])
+          if _lv.get("buy_lo") is not None and _lv.get("buy_hi") is not None else None)
+    sz = ((_lv["sell_lo"], _lv["sell_hi"])
+          if _lv.get("sell_lo") is not None and _lv.get("sell_hi") is not None else None)
     _, e_ico, e_lab, _, h_ico, h_lab = ADV[c]
 
     # 空手
@@ -263,9 +273,23 @@ for c in C.CODES:
         e_cls, e_act = "a-no", "不宜買進"
         e_why = "日報未設買點（%s）。重新評估門檻：%s" % (z["buy_anchor"], z["buy_cond"])
     elif bz[0] <= px <= bz[1]:
-        e_cls, e_act = "a-buy", "已進入買進區間，可分批買進"
-        e_why = "買進區間 %s（%s）。仍須確認：%s" % (z["buy_zone"], z["buy_anchor"], z["buy_cond"])
-        ALERTS.append((c, "買", "價格進入買進區間 %s" % z["buy_zone"]))
+        # ★ 必須尊重日報的空手結論（與下方持有分支同一原則）。
+        #   ⚠ 2026-08-24 補：原本只看價位，日報的 e-wait／e-no 會被升級成
+        #   「可分批買進」——08/24 就出現日報寫「只有價位到而籌碼沒到就不要進」，
+        #   即時頁卻講「已進入買進區間，可分批買進」，兩者互相矛盾。
+        _e_kind = ADV[c][0]                     # e-go / e-part / e-wait / e-no
+        if _e_kind in ("e-go", "e-part"):
+            e_cls, e_act = "a-buy", "已進入買進區間，可分批買進"
+            e_why = "買進區間 %s（%s）。%s" % (z["buy_zone"], z["buy_anchor"], z["buy_cond"])
+            ALERTS.append((c, "買", "價格進入買進區間 %s" % z["buy_zone"]))
+        else:
+            e_cls, e_act = "a-wait", "價位到了，但日報的進場條件未確認"
+            e_why = ("價格已落在買進區間 %s（%s），"
+                     "但<b>日報的空手結論是「%s」，進場條件不只看價位</b>——"
+                     "條件未確認前不要進：%s"
+                     % (z["buy_zone"], z["buy_anchor"], e_lab, z["buy_cond"]))
+            ALERTS.append((c, "警", "價位已進買進區間 %s，但日報結論是「%s」——條件未確認前不要進"
+                           % (z["buy_zone"], e_lab)))
     elif px > bz[1]:
         e_cls, e_act = "a-wait", "偏貴，等回到 %s" % z["buy_zone"]
         e_why = "距區間上緣 %s 元還有 %+.1f%%（%s）。" % (fmt(bz[1]), (px / bz[1] - 1) * 100, z["buy_anchor"])

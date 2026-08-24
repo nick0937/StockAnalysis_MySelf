@@ -13,6 +13,8 @@ from lib import band_of, total_score, market_score, tech_adj
 import market as MK
 from scores import S, ADV
 from zones import ZONE
+from shorts import EMPTY_S, HOLD_S, OPS_S, TGT_S
+from chips import NOTES as CHIP_NOTES
 
 D = os.path.join(BASE, "data")
 IND = json.load(open(os.path.join(D, "indicators.json"), encoding="utf-8"))
@@ -80,6 +82,79 @@ print("\n[4] 標題與基準日：", "OK" if ok else "★異常")
 
 # [5] 「查無」標示
 print("[5] 「查無」標示數量：", H.count("查無"), "處")
+
+# [5a] 敘述篇幅（守則 §10：標籤 → 操作條件盒 → 3~6 句理由）
+#   ⚠ 2026-08-24 新增。起因：08/11 每欄 2~4 句，逐期漂移到 08/20 的 5~7 句，
+#     08/21 的詳版 HOLD 更暴衝到 10~12 句、字數 2.2 倍。追蹤檔數由 4 檔減為 2 檔，
+#     省下的版面被逐期填滿——這是加料，不是資訊變多。改由程式盯著。
+SENT_MAX = 6            # 每欄句數上限（＝守則 §10 的上限）
+SENT_MIN = 3            # 下限
+CHAR_MAX = 480          # ★ 每欄字數上限（去 HTML 標籤後）。只管句數會被繞過——
+                        #   08/21 的 1514 持有是「7 句 870 字」＝平均一句 124 字，等於把三句塞成一句。
+                        #   480 字 ≈ 08/17~08/18 那幾期的手感（當時 393~534 字）。
+
+
+def _plain(t):
+    return re.sub(r"<[^>]+>", "", t or "")
+
+
+def _sent(t):
+    return len([x for x in re.split(r"[。！？]", _plain(t)) if x.strip()])
+
+
+print("\n[5a] 敘述篇幅（守則 §10：每欄 %d~%d 句、≤ %d 字；只量 shorts，那是唯一進報告的一份）"
+      % (SENT_MIN, SENT_MAX, CHAR_MAX))
+over = 0
+for lab, d in (("空手", EMPTY_S), ("持有", HOLD_S), ("操作參考", OPS_S), ("目標價", TGT_S)):
+    for c in C.CODES:
+        n, ch = _sent(d.get(c, "")), len(_plain(d.get(c, "")))
+        per = ch / n if n else 0
+        flag = []
+        if not (SENT_MIN <= n <= SENT_MAX):
+            flag.append("%d 句超出 %d~%d" % (n, SENT_MIN, SENT_MAX))
+        if ch > CHAR_MAX:
+            flag.append("%d 字超出 %d" % (ch, CHAR_MAX))
+        over += len(flag)
+        print("    %-6s %s %-6s %2d 句 / %4d 字（每句 %3.0f 字）  %s"
+              % (lab, c, IND["stocks"][c]["name"], n, ch, per,
+                 "OK" if not flag else "★ " + "；".join(flag)))
+print("    結果：", "全部在守則範圍內" if over == 0 else "★ %d 項超標，交付前請收斂" % over)
+
+# [5b] 同一個數字被寫了幾遍（守則 §14 品質要求：不要同一事實反覆鋪陳）
+#   ⚠ 2026-08-24 新增。08/21 實測：「外資 −2,204」等 5 個數字各出現在 10 個欄位。
+#   合理的三處是：籌碼區塊原文一次、卡片理由一次、總結一次。
+DUP_MAX = 3
+_FIELDS = {
+    "shorts.EMPTY_S": EMPTY_S, "shorts.HOLD_S": HOLD_S,
+    "shorts.OPS_S": OPS_S, "shorts.TGT_S": TGT_S,
+    "chips.NOTES": CHIP_NOTES,
+}
+_BLOBS = {k: " ".join(v.values()) for k, v in _FIELDS.items()}
+_BLOBS["zones.buy_cond"] = " ".join(v["buy_cond"] for v in ZONE.values())
+_BLOBS["zones.sell_cond"] = " ".join(v["sell_cond"] for v in ZONE.values())
+_BLOBS["market.KEY_CHANGES"] = " ".join(MK.KEY_CHANGES)
+_BLOBS["market.EVENTS"] = " ".join(MK.EVENTS)
+_BLOBS["market.SUMMARY"] = MK.SUMMARY + getattr(MK, "HIDDEN_NOTE", "")
+
+# 從所有敘述裡自動抓「帶正負號或千分位的數字／百分比」當候選，不用手動維護清單
+_ALL = " ".join(_BLOBS.values())
+_CAND = set(re.findall(r"[+−\-]?\d{1,3}(?:,\d{3})+|[+−\-]\d+(?:\.\d+)?%?|\d+\.\d+%", _plain(_ALL)))
+_dup = []
+for tok in _CAND:
+    if len(tok) < 4:
+        continue
+    hits = [n for n, b in _BLOBS.items() if tok in _plain(b)]
+    if len(hits) > DUP_MAX:
+        _dup.append((len(hits), tok, hits))
+_dup.sort(reverse=True)
+print("\n[5b] 同一數字的重複鋪陳（上限 %d 處：籌碼原文／卡片理由／總結）" % DUP_MAX)
+if not _dup:
+    print("    結果： 沒有任何數字超過 %d 處" % DUP_MAX)
+else:
+    for n, tok, hits in _dup[:12]:
+        print("    ★ %-10s %2d 處 ｜ %s" % (tok, n, "、".join(hits)))
+    print("    結果： ★ %d 個數字超過 %d 處——同一事實請只留籌碼原文＋一處理由＋一處總結"
+          % (len(_dup), DUP_MAX))
 
 # ── 重建首頁（保留舊期的摘要，只更新最新一期）─────────────────────
 print("\n" + "=" * 92)
