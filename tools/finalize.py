@@ -139,6 +139,18 @@ _BLOBS["market.SUMMARY"] = MK.SUMMARY + getattr(MK, "HIDDEN_NOTE", "")
 # 從所有敘述裡自動抓「帶正負號或千分位的數字／百分比」當候選，不用手動維護清單
 _ALL = " ".join(_BLOBS.values())
 _CAND = set(re.findall(r"[+−\-]?\d{1,3}(?:,\d{3})+|[+−\-]\d+(?:\.\d+)?%?|\d+\.\d+%", _plain(_ALL)))
+# ★ 排除「基準事實」：基準日的指數與各檔收盤價、漲跌幅。
+#   這些數字本來就會同時出現在價格區、籌碼判讀、關鍵變化與族群比較裡，
+#   壓到 3 處只會扭曲文字。3 處上限要管的是「籌碼與技術明細的反覆鋪陳」。
+_BASE_FACTS = set()
+for _a in [IND["idx"]] + [IND["stocks"][c] for c in C.CODES]:
+    for _v in (_a.get("chg_pct"), _a.get("close")):
+        if _v is None:
+            continue
+        # ⚠ "%,.2f" 在 %-formatting 裡是非法的（千分位只有 str.format 支援）
+        for _t in ("{:.2f}".format(_v), "{:+.2f}".format(_v), "{:,.2f}".format(_v)):
+            _BASE_FACTS |= {_t, _t + "%", _t.replace("-", "−"), _t.replace("-", "−") + "%"}
+_CAND -= _BASE_FACTS
 _dup = []
 for tok in _CAND:
     if len(tok) < 4:
