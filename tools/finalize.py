@@ -152,10 +152,20 @@ for _a in [IND["idx"]] + [IND["stocks"][c] for c in C.CODES]:
             _BASE_FACTS |= {_t, _t + "%", _t.replace("-", "−"), _t.replace("-", "−") + "%"}
 _CAND -= _BASE_FACTS
 _dup = []
+
+
+def _count_fields(tok):
+    """數這個 token 出現在幾個欄位裡。
+    ⚠ 必須用邊界比對，不能用純子字串——否則 "0.04%" 會被 "−0.04%" 誤計，
+    而那是兩個完全不同的數字（5 日集中度 vs 對族群超額）。"""
+    pat = re.compile(r"(?<![0-9,.+\-−])" + re.escape(tok))
+    return [n for n, b in _BLOBS.items() if pat.search(_plain(b))]
+
+
 for tok in _CAND:
     if len(tok) < 4:
         continue
-    hits = [n for n, b in _BLOBS.items() if tok in _plain(b)]
+    hits = _count_fields(tok)
     if len(hits) > DUP_MAX:
         _dup.append((len(hits), tok, hits))
 _dup.sort(reverse=True)
