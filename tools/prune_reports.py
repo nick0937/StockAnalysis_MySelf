@@ -49,12 +49,18 @@ def prune(repo=None, keep=KEEP, quiet=False):
     repo = repo or C.REPO
     dirs = sorted(d for d in os.listdir(repo)
                   if re.fullmatch(r"\d{8}", d) and os.path.isdir(os.path.join(repo, d)))
-    over = dirs[:-keep] if len(dirs) > keep else []
+    # ★ 2026-08-27 修：本檔在 build_report.py 開頭執行，此時「當期資料夾還沒建立」。
+    #   若只看磁碟上的份數，跑完會變成 keep+1 份、要等下一期才收斂——不符合「只留最新 keep 個」。
+    #   → 把 config.YMD（即將產出的當期）併進名單再排序，當期已存在時去重不影響。
+    pending = C.YMD if re.fullmatch(r"\d{8}", str(C.YMD)) else None
+    universe = sorted(set(dirs) | ({pending} if pending else set()))
+    keep_set = set(universe[-keep:])
+    over = [d for d in dirs if d not in keep_set]
 
     if not quiet:
         print("[0] 報告資料夾保留檢查（守則 §12.1：只留最新 %d 個開盤日）" % keep)
-        print("    現有 %d 份，最新 %d 份保留：%s"
-              % (len(dirs), min(keep, len(dirs)), "、".join(dirs[-keep:]) or "（無）"))
+        print("    磁碟現有 %d 份＋當期 %s；保留最新 %d 個：%s"
+              % (len(dirs), pending or "（無）", keep, "、".join(universe[-keep:]) or "（無）"))
 
     if not over:
         if not quiet:
