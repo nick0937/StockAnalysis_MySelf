@@ -83,40 +83,21 @@ print("\n[4] 標題與基準日：", "OK" if ok else "★異常")
 # [5] 「查無」標示
 print("[5] 「查無」標示數量：", H.count("查無"), "處")
 
-# [5a] 敘述篇幅（守則 §10：標籤 → 操作條件盒 → 3~6 句理由）
-#   ⚠ 2026-08-24 新增。起因：08/11 每欄 2~4 句，逐期漂移到 08/20 的 5~7 句，
-#     08/21 的詳版 HOLD 更暴衝到 10~12 句、字數 2.2 倍。追蹤檔數由 4 檔減為 2 檔，
-#     省下的版面被逐期填滿——這是加料，不是資訊變多。改由程式盯著。
-SENT_MAX = 6            # 每欄句數上限（＝守則 §10 的上限）
-SENT_MIN = 3            # 下限
-CHAR_MAX = 480          # ★ 每欄字數上限（去 HTML 標籤後）。只管句數會被繞過——
-                        #   08/21 的 1514 持有是「7 句 870 字」＝平均一句 124 字，等於把三句塞成一句。
-                        #   480 字 ≈ 08/17~08/18 那幾期的手感（當時 393~534 字）。
-
-
-def _plain(t):
-    return re.sub(r"<[^>]+>", "", t or "")
-
-
-def _sent(t):
-    return len([x for x in re.split(r"[。！？]", _plain(t)) if x.strip()])
-
-
-print("\n[5a] 敘述篇幅（守則 §10：每欄 %d~%d 句、≤ %d 字；只量 shorts，那是唯一進報告的一份）"
-      % (SENT_MIN, SENT_MAX, CHAR_MAX))
+print("\n[5a] 敘述篇幅（守則 §10：空手／持有 ≤ %d 字、操作參考／目標價 ≤ %d 字；只量 shorts）"
+      % (LIMITS["空手"][2], LIMITS["操作參考"][2]))
 over = 0
 for lab, d in (("空手", EMPTY_S), ("持有", HOLD_S), ("操作參考", OPS_S), ("目標價", TGT_S)):
+    lo, hi, cap = LIMITS[lab]
     for c in C.CODES:
         n, ch = _sent(d.get(c, "")), len(_plain(d.get(c, "")))
-        per = ch / n if n else 0
         flag = []
-        if not (SENT_MIN <= n <= SENT_MAX):
-            flag.append("%d 句超出 %d~%d" % (n, SENT_MIN, SENT_MAX))
-        if ch > CHAR_MAX:
-            flag.append("%d 字超出 %d" % (ch, CHAR_MAX))
+        if not (lo <= n <= hi):
+            flag.append("%d 句超出 %d~%d" % (n, lo, hi))
+        if ch > cap:
+            flag.append("%d 字超出 %d" % (ch, cap))
         over += len(flag)
-        print("    %-6s %s %-6s %2d 句 / %4d 字（每句 %3.0f 字）  %s"
-              % (lab, c, IND["stocks"][c]["name"], n, ch, per,
+        print("    %-6s %s %-6s %2d 句 / %4d 字（每句 %3.0f，上限 %d）  %s"
+              % (lab, c, IND["stocks"][c]["name"], n, ch, ch / n if n else 0, cap,
                  "OK" if not flag else "★ " + "；".join(flag)))
 print("    結果：", "全部在守則範圍內" if over == 0 else "★ %d 項超標，交付前請收斂" % over)
 
