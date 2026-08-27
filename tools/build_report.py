@@ -31,6 +31,15 @@ from monthly import MONTHLY, MNOTE
 from chips import out as CHIP
 from q2est import Q2EST, NOQ2
 
+# ★ 守則 §12.1（2026-08-27）：跑報告前先把超出 10 個開盤日的報告資料夾刪掉。
+#   放在這裡而不是靠人記得，理由與 build_live.py 那條硬規定相同——靠自律會漏。
+#   prune_reports 只刪 repo 根目錄下的 8 位數資料夾，而且只刪已進版控的（刪掉可從 git 取回）；
+#   data/raw 的兩年歷史與 chips.py 的 10 列表格都不在它的範圍內。
+from prune_reports import prune as _prune_reports
+
+_prune_reports()
+print()
+
 D = os.path.join(BASE, "data")
 IND = json.load(open(os.path.join(D, "indicators.json"), encoding="utf-8"))
 FIN = json.load(open(os.path.join(D, "fin.json"), encoding="utf-8"))
