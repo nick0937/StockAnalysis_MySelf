@@ -270,4 +270,5 @@ for p in sorted([RP, home_p, cm_p], key=os.path.getmtime):
     t = time.strftime("%H:%M:%S", time.localtime(os.path.getmtime(p)))
     print("    %-42s %8.1f KB  %s" % (p.replace(C.REPO + os.sep, ""),
                                       os.path.getsize(p) / 1024, t))
-print("\n★ 不要自己 git commit／push —— 由使用者雙擊「建立Commit.bat」處理。")
+print("\n★ 接下來：跑 build_live.py，然後執行「建立Commit.bat」建立 commit（守則 §0 硬規定二、三）。")
+print("★ git push 不要自己跑 —— 推上 GitHub Pages 就是對外發布，時機由使用者決定。")

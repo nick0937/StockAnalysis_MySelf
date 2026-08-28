@@ -237,6 +237,10 @@ def mny(v):
 
 # ── 逐檔判定 ─────────────────────────────────────────────────────
 ROWS, ALERTS = [], []
+# ★ 守則 §19.8：即時頁「空手／持有」說明欄的硬上限。
+#   本頁的用途是「現在該做什麼」，不是把日報的操作條件盒再展開一次。
+SHORT_CAP = 120
+LONG_WHY = []          # 超出上限的欄位，跑完一律列出
 for c in C.CODES:
     m, a, z = Q.get(c), IND["stocks"][c], ZONE[c]
     if not m:
@@ -269,9 +273,15 @@ for c in C.CODES:
     _, e_ico, e_lab, _, h_ico, h_lab = ADV[c]
 
     # 空手
+    # ★★ 2026-08-28 收緊（守則 §19.8）：即時頁只回答「現在該做什麼」，
+    #   說明欄一律 ≤ SHORT_CAP 字。原本每個分支都把 zones.py 的 buy_cond／sell_cond
+    #   整段照貼（334~595 字），加上 anchor 之後單欄衝到 814~1352 字——
+    #   那是日報的「參考欄」，本頁不該再展開一次；完整條件用卡片上的日報連結去看。
     if bz is None:                                    # 「暫不設買點」
         e_cls, e_act = "a-no", "不宜買進"
-        e_why = "日報未設買點（%s）。重新評估門檻：%s" % (z["buy_anchor"], z["buy_cond"])
+        _w = _lv.get("watch")
+        e_why = ("日報未設買點，門檻未過。" +
+                 ("先看能否帶量站上 %s 元。" % fmt(_w) if _w else "條件見日報。"))
     elif bz[0] <= px <= bz[1]:
         # ★ 必須尊重日報的空手結論（與下方持有分支同一原則）。
         #   ⚠ 2026-08-24 補：原本只看價位，日報的 e-wait／e-no 會被升級成
@@ -280,23 +290,20 @@ for c in C.CODES:
         _e_kind = ADV[c][0]                     # e-go / e-part / e-wait / e-no
         if _e_kind in ("e-go", "e-part"):
             e_cls, e_act = "a-buy", "已進入買進區間，可分批買進"
-            e_why = "買進區間 %s（%s）。%s" % (z["buy_zone"], z["buy_anchor"], z["buy_cond"])
+            e_why = "買進區間 %s，分批進；跌破 %s 元先停手。" % (z["buy_zone"], fmt(bz[0]))
             ALERTS.append((c, "買", "價格進入買進區間 %s" % z["buy_zone"]))
         else:
             e_cls, e_act = "a-wait", "價位到了，但日報的進場條件未確認"
-            e_why = ("價格已落在買進區間 %s（%s），"
-                     "但<b>日報的空手結論是「%s」，進場條件不只看價位</b>——"
-                     "條件未確認前不要進：%s"
-                     % (z["buy_zone"], z["buy_anchor"], e_lab, z["buy_cond"]))
+            e_why = ("價位已在 %s，但日報結論是「%s」——<b>進場條件不只看價位</b>，未確認前不要進。"
+                     % (z["buy_zone"], e_lab))
             ALERTS.append((c, "警", "價位已進買進區間 %s，但日報結論是「%s」——條件未確認前不要進"
                            % (z["buy_zone"], e_lab)))
     elif px > bz[1]:
         e_cls, e_act = "a-wait", "偏貴，等回到 %s" % z["buy_zone"]
-        e_why = "距區間上緣 %s 元還有 %+.1f%%（%s）。" % (fmt(bz[1]), (px / bz[1] - 1) * 100, z["buy_anchor"])
+        e_why = "距區間上緣 %s 元還有 %+.1f%%，等回檔。" % (fmt(bz[1]), (px / bz[1] - 1) * 100)
     else:
         e_cls, e_act = "a-warn", "已跌破買進區間下緣，先別接"
-        e_why = ("現價低於區間下緣 %s 元（%s），代表原本錨定的支撐已失守，"
-                 "買進理由要重新確認：%s" % (fmt(bz[0]), z["buy_anchor"], z["buy_cond"]))
+        e_why = "已低於下緣 %s 元，錨定的支撐失守，買進理由要重新確認。" % fmt(bz[0])
         ALERTS.append((c, "警", "跌破買進區間下緣 %s 元" % fmt(bz[0])))
 
     # 持有
@@ -310,59 +317,64 @@ for c in C.CODES:
     if sz and px > sz[1] and h_kind == "h-tp" and vr is not None and vr >= 1.5:
         h_cls = "a-hold"
         h_act = "帶量突破%s上緣，改移動停利、不要機械式賣光" % z["sell_lab"]
-        h_why = ("量比 %.2f 倍 ≥ 1.5 且已站上上緣 %s 元——依日報這是「趨勢轉強而非反彈」，"
-                 "既有部位改用移動停利跟著走，不在此價位機械式賣光。%s"
-                 % (vr, fmt(sz[1]), z["sell_cond"]))
+        h_why = ("量比 %.2f 倍 ≥ 1.5 且站上上緣 %s 元＝<b>趨勢轉強而非反彈</b>，"
+                 "改用移動停利跟著走，不在此價位賣光。" % (vr, fmt(sz[1])))
         ALERTS.append((c, "警", "帶量站上%s上緣 %s 元（量比 %.2f 倍）→ 改移動停利"
                        % (z["sell_lab"], fmt(sz[1]), vr)))
     elif sz and px > sz[1]:
         h_cls = "a-sell"
         h_act = "已高於%s上緣，優先執行" % z["sell_lab"]
-        h_why = "%s %s（%s）。%s" % (z["sell_lab"], z["sell_zone"], z["sell_anchor"], z["sell_cond"])
+        h_why = "已高於%s %s 的上緣，優先執行。" % (z["sell_lab"], z["sell_zone"])
         ALERTS.append((c, "賣", "價格高於%s上緣 %s 元" % (z["sell_lab"], fmt(sz[1]))))
     elif sz and px >= sz[0]:
         h_cls = "a-sell"
         h_act = "已進入%s，依原訂條件執行" % z["sell_lab"]
-        h_why = "%s %s（%s）。%s" % (z["sell_lab"], z["sell_zone"], z["sell_anchor"], z["sell_cond"])
+        h_why = ("%s %s，分批執行而非一次出清；跌破 %s 元則剩餘部位不必等反彈。"
+                 % (z["sell_lab"], z["sell_zone"], fmt(ma5)))
         ALERTS.append((c, "賣", "價格進入%s %s" % (z["sell_lab"], z["sell_zone"])))
     elif ma20 and px < ma20:
         h_cls, h_act = "a-cut", "跌破月線 %s 元，加快%s" % (fmt(ma20), base)
-        h_why = "月線為中期多空分界，已在其下；不必等回到%s。原訂條件：%s" % (z["sell_lab"], z["sell_cond"])
+        h_why = "月線是中期多空分界、已在其下，不必等回到%s。" % z["sell_lab"]
         ALERTS.append((c, "警", "跌破月線 %s 元" % fmt(ma20)))
     elif ma5 and px < ma5:
         # ★ 鐵則：日報判「出場／減碼」者，跌破 5 日線不可弱化成「先縮手」
         if h_kind in ("h-exit", "h-cut"):
             h_cls = "a-cut"
             h_act = "已跌破 5 日線 %s 元，%s不必再等反彈" % (fmt(ma5), base)
-            h_why = "日報結論已是「%s」，短線又轉弱，依原訂條件加快執行。%s" % (ADV[c][5], z["sell_cond"])
+            h_why = "日報結論已是「%s」，短線又轉弱，依原訂條件加快執行。" % ADV[c][5]
         else:
             h_cls, h_act = "a-warn", "跌破 5 日線 %s 元，先縮手" % fmt(ma5)
-            h_why = "短線轉弱但月線 %s 元未破。原訂條件：%s" % (fmt(ma20), z["sell_cond"])
+            h_why = "短線轉弱但月線 %s 元未破，先縮手不賣光。" % fmt(ma20)
     elif h_kind == "h-exit":
         h_cls, h_act = "a-cut", "低於出場區間，仍應在期限內分批出場"
-        h_why = ("日報結論是「%s」，不因價格未到 %s 而改為續抱；"
-                 "反彈至 %s 分批出。%s" % (ADV[c][5], z["sell_zone"], z["sell_zone"], z["sell_cond"]))
+        h_why = ("日報結論是「%s」，<b>不因價格未到 %s 而改為續抱</b>；反彈至該區間分批出。"
+                 % (ADV[c][5], z["sell_zone"]))
     elif h_kind == "h-cut":
         # ★ 鐵則 3：日報若已宣告某一段減碼觸發，不可講成「等反彈到區間再減」——那等於取消已觸發的動作
         if z.get("done"):
             h_cls = "a-cut"
             h_act = "已觸發的減碼先執行，其餘反彈至 %s" % z["sell_zone"]
-            h_why = "<b>%s</b>。目前價格未到%s（%s）；跌破 5 日線 %s 元則剩餘部位也不必等反彈。%s" % (
-                z["done"], z["sell_lab"], z["sell_anchor"], fmt(ma5), z["sell_cond"])
+            h_why = ("<b>%s</b>。目前未到%s；跌破 %s 元則剩餘部位不必等反彈。"
+                     % (z["done"], z["sell_lab"], fmt(ma5)))
         else:
             h_cls, h_act = "a-warn", "反彈至 %s 再減碼" % z["sell_zone"]
-            h_why = "日報結論是「%s」，目前價格未到%s（%s）；跌破 5 日線 %s 元則不必等反彈。%s" % (
-                ADV[c][5], z["sell_lab"], z["sell_anchor"], fmt(ma5), z["sell_cond"])
+            h_why = ("日報結論是「%s」，目前未到%s %s；跌破 %s 元則不必等反彈。"
+                     % (ADV[c][5], z["sell_lab"], z["sell_zone"], fmt(ma5)))
     elif z.get("done"):
         # ★ 鐵則 3：停利區間曾被觸及者，跌回區間下緣之下不等於「未觸發任何條件」
         h_cls = "a-warn"
         h_act = "已觸發的%s先執行，其餘續抱" % base
-        h_why = "<b>%s</b>。%s在 %s（%s）；跌破 5 日線 %s 元先縮手。%s" % (
-            z["done"], z["sell_lab"], z["sell_zone"], z["sell_anchor"], fmt(ma5), z["sell_cond"])
+        h_why = ("<b>%s</b>。%s在 %s；跌破 %s 元先縮手。"
+                 % (z["done"], z["sell_lab"], z["sell_zone"], fmt(ma5)))
     else:
         h_cls, h_act = "a-hold", "續抱，未觸發任何條件"
-        h_why = "%s在 %s（%s）；跌破 5 日線 %s 元先縮手。%s" % (
-            z["sell_lab"], z["sell_zone"], z["sell_anchor"], fmt(ma5), z["sell_cond"])
+        h_why = "%s在 %s；跌破 %s 元先縮手。" % (z["sell_lab"], z["sell_zone"], fmt(ma5))
+
+    # ★ 守則 §19.8：兩欄的說明一律 ≤ SHORT_CAP 字，超出即記錄（不截斷，讓它被看見並修文字）
+    for _lab, _t in (("空手", e_why), ("持有", h_why)):
+        _n = len(re.sub(r"<[^>]+>", "", _t))
+        if _n > SHORT_CAP:
+            LONG_WHY.append((c, _lab, _n, _t))
 
     # ★ MySelf 專屬：實際持倉的損益與「換算成幾張」（守則第 20.2 節，純算術）
     #   ⚠ 不產生新結論、不改寫上方措辭；動作與用語一律沿用 zones.py 那一套。
@@ -579,7 +591,9 @@ w('<p><span class="ph %s">%s</span>報價時間 %s（%s・來源 %s）　依據 
      SRC_LABEL, C.BASE_DATE, C.BASE_WEEKDAY))
 w("</div></header>")
 w('<div class="wrap">')
-w('<a class="back" href="../index.html">← 回首頁</a>')
+w('<a class="back" href="../index.html">← 回首頁</a>'
+  '<a class="back" href="../%s/index.html" style="margin-left:10px">'
+  '完整買賣條件 → %s 日報</a>' % (C.YMD, C.BASE_DATE))
 
 if STALE:
     w('<div class="alerts"><b>⚠ 目前取得的報價仍是 %s 的收盤價</b>，'
@@ -712,7 +726,9 @@ w('<div class="foot"><h3>這頁在做什麼</h3>'
   '均線、布林通道、20 日均量等技術位一律沿用日報基準日的收盤計算值，<b>不用盤中未完成的 K 棒重算</b>；'
   '頁面上只有價格、漲跌、成交量是即時的。判斷邏輯固定：'
   '價格落在買進區間內＝可分批買、高於區間＝等回檔、跌破區間下緣＝支撐失守先別接；'
-  '持有則依序檢查是否進入停利／減碼／出場區間、是否跌破月線、是否跌破 5 日線。</p>'
+  '持有則依序檢查是否進入停利／減碼／出場區間、是否跌破月線、是否跌破 5 日線。'
+  '<b>兩欄的說明刻意只留「結論＋觸發價位」</b>——完整的進場／減碼條件、錨點來源與保留事項'
+  '都在日報的「操作條件盒」裡，用上方連結去看，本頁不重複展開。</p>'
   '<h3>成本模擬怎麼算</h3>'
   '<p>各卡片的「成本模擬」只在你的瀏覽器內計算（輸入值存在本機瀏覽器，頁面重新產生後仍保留，不會上傳）。'
   '報酬率＝現價÷成本−1；每張帳面損益＝（現價−成本）×1,000，未含費用；'
@@ -765,3 +781,15 @@ print("\n各檔動作：")
 for r in ROWS:
     print("    %s %-8s %8s  空手 %-28s 持有 %s"
           % (r["c"], r["name"], fmt(r["px"]), r["e_act"], r["h_act"]))
+
+print()
+print("空手／持有 說明篇幅（守則 §19.8：≤ %d 字）" % SHORT_CAP)
+for r in ROWS:
+    for _lab, _t in (("空手", r["e_why"]), ("持有", r["h_why"])):
+        _n = len(re.sub(r"<[^>]+>", "", _t))
+        print("    %-4s %s %-8s %3d 字  %s"
+              % (_lab, r["c"], r["name"], _n, "OK" if _n <= SHORT_CAP else "★ 超出上限"))
+if LONG_WHY:
+    print("    ★ %d 欄超出上限，請縮短文字（本檔不自動截斷）" % len(LONG_WHY))
+else:
+    print("    結果： 全部在上限內")

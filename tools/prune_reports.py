@@ -10,7 +10,7 @@
   ・保留最新 KEEP 個（依資料夾名排序，就是開盤日順序），其餘整個資料夾刪除。
   ・刪除後 `finalize.py` 會用 `os.listdir` 重掃，首頁的歷史卡片自動同步成 KEEP 期。
 
-⚠ 為什麼可以直接刪：報告資料夾每期都由使用者雙擊「建立Commit.bat」進版控，
+⚠ 為什麼可以直接刪：報告資料夾每期都由「建立Commit.bat」進版控（守則 §0 硬規定三），
   刪掉之後仍可用 `git checkout <commit> -- <資料夾>` 取回；但線上 GitHub Pages 的那一頁會消失。
   → 因此本檔<b>只刪已進版控的資料夾</b>；未 commit 的會跳過並印警告，避免真的弄丟。
 
@@ -83,7 +83,7 @@ def prune(repo=None, keep=KEEP, quiet=False):
         print("    結果： 刪除 %d 份、跳過 %d 份；首頁的歷史卡片會由 finalize.py 自動同步"
               % (len(deleted), len(skipped)))
         if skipped:
-            print("    ⚠ 跳過的請先讓使用者雙擊「建立Commit.bat」進版控，下次執行才會刪")
+            print("    ⚠ 跳過的要先執行「建立Commit.bat」進版控，下次執行才會刪")
     return deleted, skipped
 
 
