@@ -18,7 +18,7 @@ sys.path.insert(0, BASE)
 sys.path.insert(0, os.path.join(BASE, "inputs"))
 import config as C
 from lib import (total_score, market_score, band_of, tech_adj,
-                 pl as pl_calc, position_plan)
+                 pl as pl_calc, position_plan, trim_lots)
 import market as MK
 from scores import S, ADV
 # ★ MySelf 專屬：LIVE 為結構化價位、positions 為實際持倉（守則第 19.4／20 節）
@@ -702,11 +702,27 @@ for r in ROWS:
                       % (fmt(_pn["buy_lo"]), fmt(_pn["buy_hi"]),
                          ADV[r["c"]][2], _pn["n_lots"]))
             else:
-                w('<div class="pw">上方「持有」＝%s，%g 張不動%s</div>'
-                  % (_pn["title"], _pn["n_lots"],
-                     ("　·　距解套價 %s 元還要漲 %.1f%%"
-                      % (fmt(_pn["breakeven"]), (_pn["breakeven"] / r["px"] - 1) * 100))
-                     if (r["px"] and _pn["breakeven"] > r["px"]) else ""))
+                # ★★ 2026-08-31 修（守則 §19.7a）：position_plan 的 keep 分支只看價位落在哪個
+                #   區間（below_sell → keep／續抱），不看日報結論；當 h_cls 已是 a-cut／a-sell
+                #   （例如 h-exit 又跌破 5 日線 → 上方寫「出場不必再等反彈」），
+                #   這行會印成「上方「持有」＝續抱，N 張不動」——而它宣稱自己等於上方那一欄，
+                #   等於用最肯定的句式講反話。08/31 盤中 1514 在 102.00 元就是這個情況。
+                #   → a-cut／a-sell 時改成印「待處理張數」：h-exit 全數、h-cut 依 TRIM_FRAC。
+                if r["h_cls"] in ("a-cut", "a-sell"):
+                    _due = (_pn["n_lots"] if r["hk"] == "h-exit"
+                            else trim_lots(_pn["n_lots"], TRIM_FRAC))
+                    _rz = ((r["px"] - r["cost"]) * _due * 1000
+                           if (r["px"] is not None and r["cost"]) else None)
+                    w('<div class="pw">上方「持有」＝%s，<b>換算成 %g 張待處理</b>'
+                      '（共 %g 張，留 %g 張）；以現價 %s 元計，這 %g 張實現 %s 元</div>'
+                      % (r["h_act"], _due, _pn["n_lots"], _pn["n_lots"] - _due,
+                         fmt(r["px"]), _due, mny(_rz)))
+                else:
+                    w('<div class="pw">上方「持有」＝%s，%g 張不動%s</div>'
+                      % (_pn["title"], _pn["n_lots"],
+                         ("　·　距解套價 %s 元還要漲 %.1f%%"
+                          % (fmt(_pn["breakeven"]), (_pn["breakeven"] / r["px"] - 1) * 100))
+                         if (r["px"] and _pn["breakeven"] > r["px"]) else ""))
             if _pn.get("note"):
                 w('<div class="pn">⚠ %s</div>' % _pn["note"])
         w("</div>")
