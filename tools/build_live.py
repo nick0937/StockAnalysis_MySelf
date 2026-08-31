@@ -687,9 +687,20 @@ for r in ROWS:
                 w('<div class="pw">上方「持有」＝%s，%g 張不動（帶量突破，不機械式賣光）</div>'
                   % (_pn["title"], _pn["n_lots"]))
             elif _pn["act"] == "addzone":
-                w('<div class="pw">現價在加碼區間 %s – %s 元內（每 1 張約需 %s 元），'
-                  '加幾張由你自己決定</div>'
-                  % (fmt(_pn["buy_lo"]), fmt(_pn["buy_hi"]), "{:,.0f}".format(_pn["unit"] or 0)))
+                # ★★ 2026-08-31 修（守則 §19.7）：持倉層的「加碼」也必須尊重日報的空手結論。
+                #   原本只看 zone_state == in_buy，日報寫 e-wait／e-no 時仍會顯示「加幾張由你自己決定」——
+                #   08/31 盤中就出現同一張卡片上方寫「條件未確認前不要進」、下方邀請加碼。
+                #   加碼就是進場，判準與空手欄同一套：只有 e-go／e-part 才是可加碼。
+                if ADV[r["c"]][0] in ("e-go", "e-part"):
+                    w('<div class="pw">現價在加碼區間 %s – %s 元內（每 1 張約需 %s 元），'
+                      '加幾張由你自己決定</div>'
+                      % (fmt(_pn["buy_lo"]), fmt(_pn["buy_hi"]),
+                         "{:,.0f}".format(_pn["unit"] or 0)))
+                else:
+                    w('<div class="pw">現價已落在買進區間 %s – %s 元內，'
+                      '<b>但日報結論是「%s」——進場條件未確認前不加碼</b>；%g 張不動</div>'
+                      % (fmt(_pn["buy_lo"]), fmt(_pn["buy_hi"]),
+                         ADV[r["c"]][2], _pn["n_lots"]))
             else:
                 w('<div class="pw">上方「持有」＝%s，%g 張不動%s</div>'
                   % (_pn["title"], _pn["n_lots"],

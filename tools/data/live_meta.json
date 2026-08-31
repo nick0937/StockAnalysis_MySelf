@@ -1,10 +1,10 @@
 {
- "quote_time": "2026-08-28 13:30",
- "gen_time": "2026-08-28 17:30",
- "phase": "已收盤（報價為今日收盤價）",
+ "quote_time": "2026-08-31 10:35",
+ "gen_time": "2026-08-31 10:35",
+ "phase": "盤中",
  "base_date": "2026-08-28",
- "alerts": 4,
+ "alerts": 3,
  "source": "玩股網",
- "lag_min": 240,
+ "lag_min": 0,
  "delayed": false
 }
