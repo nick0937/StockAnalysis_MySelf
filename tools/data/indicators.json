@@ -180,7 +180,144 @@
     "c": 45862.51953125
    }
   ],
-  "n": 484
+  "n": 484,
+  "strat": {
+   "has_volume": true,
+   "vwap": {
+    "v20": 46033.96,
+    "v60": 45299.61,
+    "anchored": 36762.89,
+    "anchor_bars": 240,
+    "dev20_pct": -0.37,
+    "dev_anchor_pct": 24.75,
+    "state": "當日失守"
+   },
+   "range": {
+    "hi20": 47578.24,
+    "lo20": 44210.31,
+    "hi60": 48218.87,
+    "lo60": 39384.85,
+    "pos20_pct": 49.1,
+    "vr20": 0,
+    "state": "區間內"
+   },
+   "meanrev": {
+    "bias20": -0.35,
+    "mu": 2.62,
+    "sd": 4.25,
+    "z": -0.7,
+    "state": "常態"
+   },
+   "pullback": {
+    "state": "拉回未確認",
+    "level": "季線",
+    "px": 45210.78,
+    "body_warn": false,
+    "why": "近 5 日最低 45398.43 觸及季線 45210.78，收盤 45862.52 守住、當日收跌"
+   },
+   "nearest_sup": {
+    "name": "季線",
+    "px": 45210.78,
+    "dist_pct": 1.44
+   },
+   "nearest_res": {
+    "name": "月線",
+    "px": 46025.55,
+    "dist_pct": 0.36
+   },
+   "gaps": {
+    "all": [
+     {
+      "i_from_end": 59,
+      "dir": "up",
+      "lo": 46565.7,
+      "hi": 46679.57,
+      "size_pct": 0.25,
+      "filled": true
+     },
+     {
+      "i_from_end": 57,
+      "dir": "down",
+      "lo": 46909.98,
+      "hi": 47100.65,
+      "size_pct": 0.4,
+      "filled": true
+     },
+     {
+      "i_from_end": 38,
+      "dir": "up",
+      "lo": 44232.87,
+      "hi": 44513.75,
+      "size_pct": 0.64,
+      "filled": true
+     },
+     {
+      "i_from_end": 31,
+      "dir": "up",
+      "lo": 41155.42,
+      "hi": 41610.41,
+      "size_pct": 1.14,
+      "filled": false
+     },
+     {
+      "i_from_end": 22,
+      "dir": "up",
+      "lo": 45529.48,
+      "hi": 45676.54,
+      "size_pct": 0.32,
+      "filled": true
+     },
+     {
+      "i_from_end": 18,
+      "dir": "down",
+      "lo": 45071.34,
+      "hi": 45225.42,
+      "size_pct": 0.34,
+      "filled": true
+     },
+     {
+      "i_from_end": 12,
+      "dir": "up",
+      "lo": 45878.39,
+      "hi": 45890.18,
+      "size_pct": 0.03,
+      "filled": true
+     },
+     {
+      "i_from_end": 5,
+      "dir": "up",
+      "lo": 46620.96,
+      "hi": 46724.0,
+      "size_pct": 0.22,
+      "filled": true
+     }
+    ],
+    "unfilled": [
+     {
+      "i_from_end": 31,
+      "dir": "up",
+      "lo": 41155.42,
+      "hi": 41610.41,
+      "size_pct": 1.14,
+      "filled": false
+     }
+    ],
+    "today": null
+   },
+   "trend": {
+    "atr14": 825.85,
+    "atr_pct": 1.8,
+    "hh22": 47578.24,
+    "chandelier": 45100.7,
+    "chand_gap_pct": 1.69,
+    "align": "多頭排列",
+    "above_chand": true
+   },
+   "scalp": {
+    "state": "不適用",
+    "why": "剝頭皮需要分鐘級／逐筆資料與手續費滑價模型，本專案是日線收盤報告，硬做會是誤導；最接近的替代（現價在當日區間的位置）已在即時頁，但那是觀察不是策略。"
+   }
+  }
  },
  "stocks": {
   "1504": {
@@ -368,7 +505,152 @@
    },
    "beta": 0.8357481947673173,
    "corr": 0.6837806482589447,
-   "rs": 49.49158729775311
+   "rs": 49.49158729775311,
+   "strat": {
+    "has_volume": true,
+    "vwap": {
+     "v20": 72.21,
+     "v60": 69.62,
+     "anchored": 72.75,
+     "anchor_bars": 113,
+     "dev20_pct": -2.64,
+     "dev_anchor_pct": -3.37,
+     "state": "持續受壓"
+    },
+    "range": {
+     "hi20": 75.5,
+     "lo20": 69.3,
+     "hi60": 75.5,
+     "lo60": 60.0,
+     "pos20_pct": 16.1,
+     "vr20": 1.01,
+     "state": "區間內"
+    },
+    "meanrev": {
+     "bias20": -1.88,
+     "mu": 0.29,
+     "sd": 6.05,
+     "z": -0.36,
+     "state": "常態"
+    },
+    "pullback": {
+     "state": "拉回確認",
+     "level": "布林下軌",
+     "px": 69.5,
+     "body_warn": true,
+     "why": "近 5 日最低 69.30 觸及布林下軌 69.50，收盤 70.30 守住、當日收漲（惟實體收黑，帶上影線）"
+    },
+    "nearest_sup": {
+     "name": "布林下軌",
+     "px": 69.5,
+     "dist_pct": 1.15
+    },
+    "nearest_res": {
+     "name": "5 日線",
+     "px": 70.34,
+     "dist_pct": 0.06
+    },
+    "gaps": {
+     "all": [
+      {
+       "i_from_end": 56,
+       "dir": "down",
+       "lo": 70.0,
+       "hi": 71.1,
+       "size_pct": 1.55,
+       "filled": true
+      },
+      {
+       "i_from_end": 38,
+       "dir": "up",
+       "lo": 67.5,
+       "hi": 67.8,
+       "size_pct": 0.45,
+       "filled": true
+      },
+      {
+       "i_from_end": 31,
+       "dir": "up",
+       "lo": 62.7,
+       "hi": 63.5,
+       "size_pct": 1.32,
+       "filled": false
+      },
+      {
+       "i_from_end": 28,
+       "dir": "up",
+       "lo": 65.7,
+       "hi": 66.4,
+       "size_pct": 1.07,
+       "filled": true
+      },
+      {
+       "i_from_end": 22,
+       "dir": "up",
+       "lo": 68.2,
+       "hi": 68.3,
+       "size_pct": 0.15,
+       "filled": false
+      },
+      {
+       "i_from_end": 14,
+       "dir": "down",
+       "lo": 71.0,
+       "hi": 71.3,
+       "size_pct": 0.42,
+       "filled": true
+      },
+      {
+       "i_from_end": 9,
+       "dir": "up",
+       "lo": 72.6,
+       "hi": 72.8,
+       "size_pct": 0.28,
+       "filled": true
+      },
+      {
+       "i_from_end": 1,
+       "dir": "down",
+       "lo": 69.9,
+       "hi": 70.2,
+       "size_pct": 0.42,
+       "filled": true
+      }
+     ],
+     "unfilled": [
+      {
+       "i_from_end": 31,
+       "dir": "up",
+       "lo": 62.7,
+       "hi": 63.5,
+       "size_pct": 1.32,
+       "filled": false
+      },
+      {
+       "i_from_end": 22,
+       "dir": "up",
+       "lo": 68.2,
+       "hi": 68.3,
+       "size_pct": 0.15,
+       "filled": false
+      }
+     ],
+     "today": null
+    },
+    "trend": {
+     "atr14": 2.01,
+     "atr_pct": 2.86,
+     "hh22": 75.5,
+     "chandelier": 69.46,
+     "chand_gap_pct": 1.21,
+     "align": "均線糾結",
+     "above_chand": true
+    },
+    "scalp": {
+     "state": "不適用",
+     "why": "剝頭皮需要分鐘級／逐筆資料與手續費滑價模型，本專案是日線收盤報告，硬做會是誤導；最接近的替代（現價在當日區間的位置）已在即時頁，但那是觀察不是策略。"
+    }
+   }
   },
   "1514": {
    "label": "亞力",
@@ -575,7 +857,128 @@
    },
    "beta": 0.8455090039544048,
    "corr": 0.6911174191348,
-   "rs": 39.43579207158467
+   "rs": 39.43579207158467,
+   "strat": {
+    "has_volume": true,
+    "vwap": {
+     "v20": 103.43,
+     "v60": 112.68,
+     "anchored": 102.16,
+     "anchor_bars": 33,
+     "dev20_pct": -3.32,
+     "dev_anchor_pct": -2.12,
+     "state": "持續受壓"
+    },
+    "range": {
+     "hi20": 111.5,
+     "lo20": 98.2,
+     "hi60": 127.45,
+     "lo60": 90.2,
+     "pos20_pct": 13.5,
+     "vr20": 0.65,
+     "state": "區間內"
+    },
+    "meanrev": {
+     "bias20": -1.89,
+     "mu": -0.76,
+     "sd": 5.8,
+     "z": -0.19,
+     "state": "常態"
+    },
+    "pullback": {
+     "state": "拉回未確認",
+     "level": "布林下軌",
+     "px": 98.89,
+     "body_warn": false,
+     "why": "近 5 日最低 99.60 觸及布林下軌 98.89，收盤 100.00 守住、當日收跌"
+    },
+    "nearest_sup": {
+     "name": "布林下軌",
+     "px": 98.89,
+     "dist_pct": 1.13
+    },
+    "nearest_res": {
+     "name": "5 日線",
+     "px": 101.6,
+     "dist_pct": 1.6
+    },
+    "gaps": {
+     "all": [
+      {
+       "i_from_end": 56,
+       "dir": "down",
+       "lo": 119.61,
+       "hi": 120.59,
+       "size_pct": 0.81,
+       "filled": true
+      },
+      {
+       "i_from_end": 50,
+       "dir": "up",
+       "lo": 121.57,
+       "hi": 122.06,
+       "size_pct": 0.41,
+       "filled": true
+      },
+      {
+       "i_from_end": 41,
+       "dir": "down",
+       "lo": 103.43,
+       "hi": 104.41,
+       "size_pct": 0.94,
+       "filled": true
+      },
+      {
+       "i_from_end": 31,
+       "dir": "up",
+       "lo": 95.3,
+       "hi": 97.0,
+       "size_pct": 1.85,
+       "filled": false
+      },
+      {
+       "i_from_end": 28,
+       "dir": "up",
+       "lo": 100.0,
+       "hi": 101.0,
+       "size_pct": 1.0,
+       "filled": true
+      },
+      {
+       "i_from_end": 10,
+       "dir": "down",
+       "lo": 104.5,
+       "hi": 105.0,
+       "size_pct": 0.48,
+       "filled": true
+      }
+     ],
+     "unfilled": [
+      {
+       "i_from_end": 31,
+       "dir": "up",
+       "lo": 95.3,
+       "hi": 97.0,
+       "size_pct": 1.85,
+       "filled": false
+      }
+     ],
+     "today": null
+    },
+    "trend": {
+     "atr14": 3.05,
+     "atr_pct": 3.05,
+     "hh22": 111.5,
+     "chandelier": 102.35,
+     "chand_gap_pct": -2.29,
+     "align": "均線糾結",
+     "above_chand": false
+    },
+    "scalp": {
+     "state": "不適用",
+     "why": "剝頭皮需要分鐘級／逐筆資料與手續費滑價模型，本專案是日線收盤報告，硬做會是誤導；最接近的替代（現價在當日區間的位置）已在即時頁，但那是觀察不是策略。"
+    }
+   }
   }
  }
 }

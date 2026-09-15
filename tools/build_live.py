@@ -17,7 +17,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE)
 sys.path.insert(0, os.path.join(BASE, "inputs"))
 import config as C
-from lib import (total_score, market_score, band_of, tech_adj,
+from lib import (total_score, market_score, band_of, tech_total_adj,
                  pl as pl_calc, position_plan, trim_lots)
 import market as MK
 from scores import S, ADV
@@ -35,7 +35,7 @@ LIVE_DIR = os.path.join(C.REPO, "live")
 # ★ 修正：原本直接用 scores.S 的技術「判讀分」，漏掉 lib.tech_adj 的客觀加減分，
 #   會讓即時頁的「日報 N 分」比日報本身少 1 分（守則 §9.1：手填無效、一律由程式套用）。
 for c in C.CODES:
-    _adj, _ = tech_adj(IND["stocks"][c])
+    _adj, _, _, _, _ = tech_total_adj(IND["stocks"][c])
     S[c] = (S[c][0], max(0, min(100, S[c][1] + _adj)), S[c][2],
             market_score(MK.ENV_SCORE, IND["stocks"][c]["rs"]), S[c][4])
 TOT = {c: total_score(S[c]) for c in C.CODES}

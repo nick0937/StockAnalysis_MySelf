@@ -9,7 +9,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE)
 sys.path.insert(0, os.path.join(BASE, "inputs"))
 import config as C
-from lib import band_of, total_score, market_score, tech_adj
+from lib import band_of, total_score, market_score, tech_adj, strat_adj, tech_total_adj
 import market as MK
 from scores import S, ADV
 from zones import ZONE
@@ -25,7 +25,8 @@ IND = json.load(open(os.path.join(D, "indicators.json"), encoding="utf-8"))
 #     COMMIT_MSG 的分數與排名全部用「判讀分」，與報告 HTML（已含加減分）不一致。
 TADJ = {}
 for c in C.CODES:
-    adj, why = tech_adj(IND["stocks"][c])
+    adj, _a1, _a2, _w1, _w2 = tech_total_adj(IND["stocks"][c])
+    why = _w1 + _w2
     TADJ[c] = (S[c][1], adj, why)
     S[c] = (S[c][0], max(0, min(100, S[c][1] + adj)), S[c][2],
             market_score(MK.ENV_SCORE, IND["stocks"][c]["rs"]), S[c][4])
@@ -55,12 +56,27 @@ print("\n[2] 大盤面分 = 環境分 %d × 50%% + RS × 50%%（不主觀給分�
 for c in RANK:
     print("    %s %-8s RS %.2f → %d" % (c, nm(c), IND["stocks"][c]["rs"], S[c][3]))
 
-# [2b] 技術面 = 判讀分 + 客觀加減分（守則 §9.1，2026-08-19 新增）
-print("\n[2b] 技術面 = 判讀分 ＋ lib.tech_adj 客觀加減分（±10 封頂，手填無效）")
+# [2b] 技術面 = 判讀分 + 客觀加減分（守則 §9.1，2026-08-19 新增；§9.2 策略訊號 2026-09-15 新增）
+print("")
+print("[2b] 技術面 = 判讀分 ＋ §9.1 tech_adj（±10）＋ §9.2 strat_adj（±8），合併封頂 ±12｜手填無效")
 for c in RANK:
-    base, adj, why = TADJ[c]
-    print("    %s %-8s %d %+d = %-3d %s"
-          % (c, nm(c), base, adj, S[c][1], "／".join(why) if why else "無訊號"))
+    _a = IND["stocks"][c]
+    _both, _a1, _a2, _w1, _w2 = tech_total_adj(_a)
+    _base = TADJ[c][0]
+    print("    %s %-8s 判讀 %d %+d = %d" % (c, nm(c), _base, _both, _base + _both))
+    print("         §9.1 %+d ｜ %s" % (_a1, "／".join(_w1) if _w1 else "無訊號"))
+    print("         §9.2 %+d ｜ %s" % (_a2, "／".join(_w2) if _w2 else "無訊號"))
+    _st = _a.get("strat") or {}
+    if _st:
+        _r, _v, _t = _st.get("range", {}), _st.get("vwap", {}), _st.get("trend", {})
+        _p, _g = _st.get("pullback", {}), (_st.get("gaps") or {})
+        print("         ②區間 %s（位置 %s%%）｜①⑤VWAP20 %s（%+.2f%%・%s）"
+              % (_r.get("state"), _r.get("pos20_pct"), _v.get("v20"),
+                 _v.get("dev20_pct") or 0, _v.get("state")))
+        print("         ④%s｜⑥%s｜⑦未回補缺口 %d 個｜⑧%s・吊燈 %s（%s）"
+              % (_st.get("meanrev", {}).get("state"), _p.get("state"),
+                 len(_g.get("unfilled") or []), _t.get("align"), _t.get("chandelier"),
+                 "站上" if _t.get("above_chand") else "★ 已跌破"))
 
 # [3] 結構檢查
 print("\n[3] 結構檢查")

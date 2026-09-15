@@ -42,9 +42,13 @@
       ——⚠ <b>MACD 柱狀體 0.1269 → −0.0001 翻負（死叉成形）</b>、<b>K 17.97 → 14.07</b>、
         <b>RSI 44.49 → 43.38</b>、<b>%B 23.77 → 18.31</b>、量能仍只有均量的 0.65 倍；
       ★ <b>不給 30~44 的下緣，是因為距 52 週低點還有 10.9%、而且當日跌幅只有 0.50%</b>。
-  ★ 加減分（`lib.tech_adj` 自動計算、手填無效）：
-    <b>1504 ＋2</b>（★ 新增 DMA 3-6 當日黃金交叉）→ <b>技術面 50</b>；
-    <b>1514 ±0</b>（頂背離 −3・半權／隱性底背離 ＋3，兩者抵銷）→ <b>技術面 33</b>。
+  ★ 加減分（`lib.tech_adj` §9.1 ＋ `lib.strat_adj` §9.2，自動計算、手填無效）：
+    <b>1504 §9.1 ＋2</b>（DMA 3-6 黃金交叉）<b>＋ §9.2 −1</b>（VWAP 持續受壓 −2／拉回確認但實體收黑 ＋1）→ <b>合計 ＋1，技術面 49</b>；
+    <b>1514 §9.1 ±0</b>（頂背離 −3・半權／隱性底背離 ＋3 抵銷）<b>＋ §9.2 −3</b>（VWAP 持續受壓 −2／<b>跌破吊燈移動停利 −1</b>）→ <b>合計 −3，技術面 30</b>。
+  ★★★ <b>§9.2 策略訊號分是 2026-09-15 新增的</b>（使用者列出八項主要策略並要求進評分）：
+    由 `tools/strategies.py` 依當日 OHLCV 機械計算 ①VWAP ②區間突破 ④均值回歸
+    ⑤VWAP 防守突破 ⑥拉回確認 ⑦缺口 ⑧趨勢與移動停利，⚠ <b>③短線剝頭皮不適用</b>（日線資料做不到）。
+    單獨封頂 ±8，與 §9.1 合併後封頂 ±12。
 
 ★ 各檔本期的分數變動與理由（S 的五個值依序為 籌碼／技術／基本／大盤／消息）：
   ★ <b>1504 東元 49 → 54</b>
@@ -150,7 +154,7 @@ if __name__ == "__main__":
     import sys, os, json
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     import config as C
-    from lib import total_score, market_score, band_of, tech_adj, tech_anchor
+    from lib import total_score, market_score, band_of, tech_total_adj, tech_anchor
     import market as MK
     ind = json.load(open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                                       "data", "indicators.json"), encoding="utf-8"))
@@ -160,7 +164,8 @@ if __name__ == "__main__":
     PREV = {"1504": 49, "1514": 44}          # 09/10 收盤（前一個交易日）
     for c in C.CODES:
         a = ind["stocks"][c]
-        adj, why = tech_adj(a)
+        adj, _a1, _a2, _w1, _w2 = tech_total_adj(a)
+        why = _w1 + _w2
         v = list(S[c]); base = v[1]
         v[1] = max(0, min(100, base + adj))
         v[3] = market_score(MK.ENV_SCORE, a["rs"])
@@ -168,8 +173,10 @@ if __name__ == "__main__":
         above = sum(1 for k in ("5", "10", "20", "60", "120", "240") if a["close"] > a["ma"][k])
         print("%s %-6s (%d, %d, %d, %d, %d) → %d（%s）｜前期 %d  %+d"
               % (c, a["name"], v[0], v[1], v[2], v[3], v[4], t, band_of(t), PREV[c], t - PREV[c]))
-        print("     技術 判讀 %d %+d = %d ｜站上 %d/6（嚴格大於）｜錨定 %s ｜ %s"
-              % (base, adj, v[1], above, tech_anchor(a), "／".join(why) if why else "無訊號"))
+        print("     技術 判讀 %d %+d = %d ｜站上 %d/6（嚴格大於）｜錨定 %s"
+              % (base, adj, v[1], above, tech_anchor(a)))
+        print("          §9.1 %+d ｜ %s" % (_a1, "／".join(_w1) if _w1 else "無訊號"))
+        print("          §9.2 %+d ｜ %s" % (_a2, "／".join(_w2) if _w2 else "無訊號"))
         print("     大盤 = %d × 50%% + RS %.2f × 50%% = %d" % (MK.ENV_SCORE, a["rs"], v[3]))
     print("\n基本面拆解合計 vs S 的基本面值：")
     for c in C.CODES:

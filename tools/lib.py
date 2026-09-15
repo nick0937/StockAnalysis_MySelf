@@ -123,6 +123,93 @@ def tech_adj(a):
     return adj, items
 
 
+# ── 策略訊號分（2026-09-15 新增，守則 §9.2）─────────────────────────
+# ★★★ 由來：使用者列出八項主要策略並要求「有效判斷建議與分數」。
+#   訊號由 tools/strategies.py 計算（手填無效），本函式只把訊號換成有上限的分數。
+#   ⚠ 與 §9.1 的 tech_adj 分開計，再合併封頂，避免兩層機械加減分疊起來蓋過錨定判讀。
+STRAT_ADJ_CAP = 8       # 策略訊號單獨封頂
+BOTH_ADJ_CAP = 12       # §9.1 ＋ §9.2 合計封頂
+
+_STRAT_RULES = {
+    # 訊號 → (分數, 顯示名)
+    "range": {"帶量突破": 3, "突破": 2, "帶量跌破": -3, "跌破": -2},
+    "vwap":  {"當日突破": 3, "站上後防守": 2, "當日失守": -3, "持續受壓": -2},
+    "mr":    {"過冷（回歸支撐）": 2, "過熱（回歸壓力）": -2},
+    "pb":    {"拉回確認": 2, "支撐失守": -2},
+}
+
+
+def strat_adj(a):
+    """回傳 (adj, 明細 list)。adj 為整數，範圍 ±STRAT_ADJ_CAP。
+    ⚠ 六類訊號各自獨立且方向可互相抵銷——互相衝突時自然相消，等於「不給方向」。"""
+    st = (a or {}).get("strat")
+    if not st:
+        return 0, ["（尚未計算策略訊號，請先跑 strategies.py）"]
+    items, total = [], 0.0
+
+    r = st.get("range", {}).get("state", "")
+    for k, v in _STRAT_RULES["range"].items():
+        if r.startswith(k):
+            total += v
+            items.append("②%s %s%d" % (r, "＋" if v >= 0 else "−", abs(v)))
+            break
+
+    vs = st.get("vwap", {}).get("state", "")
+    if vs in _STRAT_RULES["vwap"]:
+        v = _STRAT_RULES["vwap"][vs]
+        total += v
+        items.append("①⑤VWAP %s %s%d" % (vs, "＋" if v >= 0 else "−", abs(v)))
+
+    ms = st.get("meanrev", {}).get("state", "")
+    if ms in _STRAT_RULES["mr"]:
+        v = _STRAT_RULES["mr"][ms]
+        total += v
+        items.append("④均值回歸 %s %s%d" % (ms, "＋" if v >= 0 else "−", abs(v)))
+
+    pb = st.get("pullback", {})
+    ps = pb.get("state", "")
+    if ps in _STRAT_RULES["pb"]:
+        v = _STRAT_RULES["pb"][ps]
+        if ps == "拉回確認" and pb.get("body_warn"):
+            v = 1           # 收漲但實體收黑：確認品質較差，只給一半
+            items.append("⑥拉回確認（實體收黑，減半）＋1")
+        else:
+            items.append("⑥%s %s%d" % (ps, "＋" if v >= 0 else "−", abs(v)))
+        total += v
+
+    g = (st.get("gaps") or {}).get("today")
+    if g and not g.get("filled"):
+        v = 1 if g["dir"] == "up" else -1
+        total += v
+        items.append("⑦當日%s跳空未回補 %s1" % ("向上" if v > 0 else "向下", "＋" if v > 0 else "−"))
+
+    t = st.get("trend", {})
+    al, ac = t.get("align"), t.get("above_chand")
+    if al == "多頭排列" and ac:
+        total += 2
+        items.append("⑧多頭排列且站上吊燈停利 ＋2")
+    elif al == "空頭排列" and not ac:
+        total += -2
+        items.append("⑧空頭排列且跌破吊燈停利 −2")
+    elif ac is False:
+        total += -1
+        items.append("⑧跌破吊燈停利 −1")
+
+    adj = half_up(max(-STRAT_ADJ_CAP, min(STRAT_ADJ_CAP, total)))
+    if abs(total) > STRAT_ADJ_CAP:
+        items.append("合計 %s%.0f，封頂至 %s%d" % ("＋" if total >= 0 else "−", abs(total),
+                                                "＋" if adj >= 0 else "−", abs(adj)))
+    return adj, (items or ["六類訊號皆為中性"])
+
+
+def tech_total_adj(a):
+    """§9.1 ＋ §9.2 合併，再以 BOTH_ADJ_CAP 封頂。回傳 (合計, t_adj, s_adj, t_items, s_items)。"""
+    t, ti = tech_adj(a)
+    sa, si = strat_adj(a)
+    both = max(-BOTH_ADJ_CAP, min(BOTH_ADJ_CAP, t + sa))
+    return both, t, sa, ti, si
+
+
 # ── 技術判讀分的錨定區間（2026-08-20 新增，守則 §9.0）───────────────
 # ★ 只做防呆對照：build_report.py 建置時檢查「手評判讀分是否落在錨定區間
 #   ±TECH_ANCHOR_TOL 內」，超出就印警告提醒複查（守則規定超出區間 ±5 必須

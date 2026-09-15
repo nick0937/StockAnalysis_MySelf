@@ -19,7 +19,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE)
 sys.path.insert(0, os.path.join(BASE, "inputs"))
 import config as C
-from lib import (n, cm, sgn, cls, num_td, band_of, scls, total_score, market_score, tech_adj,
+from lib import (n, cm, sgn, cls, num_td, band_of, scls, total_score, market_score, tech_total_adj, strat_adj,
                  tech_anchor, TECH_ANCHOR_TOL, spark, mc, twrap, mabar, chip, opbox,
                  pl, position_plan, MA_LABEL)
 import market as MK
@@ -88,14 +88,15 @@ def div_cell(a):
     return "<br>".join(out)
 
 # ── 大盤面分一律由公式計算，覆寫 inputs 中的值（避免主觀給分）──
-# ── 技術面分 = inputs 判讀分 + DMA／MACD 背離的客觀加減分（lib.tech_adj，±10 封頂）──
+# ── 技術面分 = inputs 判讀分 ＋ §9.1 tech_adj（±10）＋ §9.2 strat_adj（±8），合併封頂 ±12 ──
 # ── 另檢查判讀分是否落在錨定區間 ±TECH_ANCHOR_TOL 內（lib.tech_anchor，守則 §9.0）：
 #    超出印警告提醒複查（超出區間 ±5 依守則須在 scores.py 寫明理由），
 #    只提醒、不覆寫判讀分、不進報告 ──
 TADJ = {}
 for c in C.CODES:
     rs = IND["stocks"][c]["rs"]
-    adj, why = tech_adj(IND["stocks"][c])
+    adj, _t9_1, _t9_2, _wt, _ws = tech_total_adj(IND["stocks"][c])
+    why = _wt + _ws
     TADJ[c] = (S[c][1], adj, why)
     lo, hi, ref = tech_anchor(IND["stocks"][c])
     if not (lo - TECH_ANCHOR_TOL <= S[c][1] <= hi + TECH_ANCHOR_TOL):
@@ -340,6 +341,52 @@ for c in RANK:
 
     # 2 均線位置
     A('<h3 class="sh">均線位置</h3>' + mabar(a))
+
+    # 2b 策略訊號（守則 §9.2，2026-09-15 新增）
+    _st = a.get("strat") or {}
+    if _st:
+        _v, _r = _st.get("vwap", {}), _st.get("range", {})
+        _m, _p = _st.get("meanrev", {}), _st.get("pullback", {})
+        _g, _t = _st.get("gaps", {}), _st.get("trend", {})
+        _uf = _g.get("unfilled") or []
+        _sadj, _sw = strat_adj(a)
+        _rows = [
+            ("①⑤ VWAP 與防守／突破",
+             "20 日 <b>%s</b>（乖離 %s）／錨定 %s（%d 根前的 52 週低起算）"
+             % (n(_v.get("v20")), sgn(_v.get("dev20_pct"), 2, True), n(_v.get("anchored")),
+                _v.get("anchor_bars") or 0),
+             _v.get("state", "—")),
+            ("② 區間突破（前 20 日）",
+             "區間 <b>%s ~ %s</b>，現價位置 <b>%s%%</b>；量比 %s（帶量門檻 1.5）"
+             % (n(_r.get("lo20")), n(_r.get("hi20")), _r.get("pos20_pct"), n(_r.get("vr20"))),
+             _r.get("state", "—")),
+            ("③ 短線剝頭皮", "<b>不適用</b>——日線收盤報告沒有分鐘級／逐筆資料與手續費滑價模型，"
+                             "硬做會是誤導", "不適用"),
+            ("④ 乖離與均值回歸",
+             "20 日乖離 %s；以自身 120 日分布標準化 → <b>z %s</b>（±2σ 為門檻）"
+             % (sgn(_m.get("bias20"), 2, True), sgn(_m.get("z"), 2)),
+             _m.get("state", "—")),
+            ("⑥ 支撐壓力拉回確認", _p.get("why", "—"), _p.get("state", "—")),
+            ("⑦ 缺口與回補",
+             ("未回補 <b>%d</b> 個：%s" % (len(_uf), "、".join(
+                 "%s %s~%s（%d 根前）" % ("向上" if x["dir"] == "up" else "向下",
+                                        n(x["lo"]), n(x["hi"]), x["i_from_end"]) for x in _uf))
+              ) if _uf else "近 60 日的跳空都已回補",
+             "%d 個未回補" % len(_uf)),
+            ("⑧ 趨勢跟隨與移動停利",
+             "ATR14 <b>%s</b>（%s%%）；<b>吊燈停利 %s</b>＝22 日最高 %s − 3×ATR，距現價 %s"
+             % (n(_t.get("atr14")), n(_t.get("atr_pct")), n(_t.get("chandelier")),
+                n(_t.get("hh22")), sgn(_t.get("chand_gap_pct"), 2, True)),
+             "%s・%s" % (_t.get("align"), "站上停利線" if _t.get("above_chand") else "★ 已跌破")),
+        ]
+        _tr = "".join('<tr><td>%s</td><td>%s</td><td class="num"><b>%s</b></td></tr>' % r for r in _rows)
+        A('<h3 class="sh">策略訊號（守則 §9.2）</h3>'
+          + twrap('<table><thead><tr><th>策略</th><th>本期數值</th><th>判定</th></tr></thead>'
+                  '<tbody>%s</tbody></table>' % _tr)
+          + '<p class="tnote">★ 八項全部由 <code>tools/strategies.py</code> 依當日 OHLCV 機械計算，'
+            '<b>手填無效</b>；合計轉為 <b>§9.2 策略訊號分 %s</b>（單獨封頂 ±8，'
+            '與 §9.1 合併後封頂 ±12）。明細：%s</p>'
+          % (sgn(_sadj, 0), "／".join(_sw)))
 
     # 3 法人動態
     A('<h3 class="sh">法人動態（近 %d 個交易日，單位：張）</h3>' % C.N_INST)

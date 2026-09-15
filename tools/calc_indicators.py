@@ -302,4 +302,8 @@ for c in C.CODES:
     print("%-5s %-9s %8.2f %+8.2f %7.2f %7.2f %+7.2f %+8.2f %6.1f %6.2f %6.2f"
           % (c, a["name"], a["close"], a["chg_pct"], a["k"], a["rsi"],
              a["bias20"], a["from_hi52"], a["rs"], a["beta"], a["corr"]))
+# ★ 2026-09-15：策略訊號（守則 §9.2）一律在這裡自動接著算，不另外要求記得跑
+#   ——monthly.py 漏更新六期的教訓：靠自覺的步驟遲早會漏。
+import strategies
+strategies.main()
 print("\n下一步：填好 inputs/*.py 後 python calc_fin.py → build_report.py → finalize.py")
