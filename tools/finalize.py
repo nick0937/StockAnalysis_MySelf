@@ -85,17 +85,26 @@ print("\n[4] 標題與基準日：", "OK" if ok else "★異常")
 print("[5] 「查無」標示數量：", H.count("查無"), "處")
 
 # [5a] 敘述篇幅（守則 §10）
-#   ⚠ 2026-08-24 新增、2026-08-27 收緊為逐欄上限（使用者兩次要求精簡）。
-#   空手／持有是「決策欄」——讀者只需要「該不該做、為什麼、在什麼價位做」，
-#     明細有操作條件盒（zones.py）與籌碼區塊（chips.NOTES）承接，所以上限 300 字
-#     （≈ 08/11 的手感：當時空手 249~279 字、持有 287~336 字）。
-#   操作參考／目標價是「參考欄」，本來就是列數字的地方，維持 480 字。
+#   ⚠ 2026-08-24 新增、08-27 收緊為逐欄上限、<b>2026-09-15 第三次收緊並首次納入操作條件盒</b>。
+#   ★★ 2026-09-15 的診斷：08/27 只收緊了卡片的決策欄，<b>膨脹就搬家到沒有上限的操作條件盒</b>
+#     ——實測 sell_cond 兩檔各 700 字，<b>條件盒占「建議」相關敘述的 52%</b>（2,489/4,787 字）。
+#     → ★ <b>只收緊一部分、放著另一部分沒有上限，等於沒收緊</b>；本次把八個欄位一次納管。
+#   分工（超出就是寫錯地方，不是寫太好）：
+#     決策欄（空手／持有）＝ 結論＋最關鍵的一組理由＋執行價位，≤ 130 字；
+#     參考欄（操作參考／目標價）＝ 列數字，≤ 220 字；
+#     條件盒（buy_cond／sell_cond）＝ 條件、判定（✅／✕）與執行價位，≤ 200 字
+#       ——⚠ <b>成因分析與方法論一律寫到 market.KEY_CHANGES／EVENTS，不寫在建議欄</b>；
+#     錨點（buy_anchor／sell_anchor）＝ 純價位，≤ 100 字。
 #   ⚠ 只管句數會被繞過（曾出現 5 句 680 字＝每句 136 字），字數與句數都要管。
 LIMITS = {
-    "空手":   (3, 5, 300),
-    "持有":   (3, 5, 300),
-    "操作參考": (3, 6, 480),
-    "目標價":  (3, 6, 480),
+    "空手":   (2, 4, 130),
+    "持有":   (2, 4, 130),
+    "操作參考": (3, 5, 220),
+    "目標價":  (3, 5, 220),
+    "條件盒空": (2, 5, 200),
+    "條件盒持": (2, 5, 200),
+    "錨點空":  (1, 3, 100),
+    "錨點持":  (1, 3, 100),
 }
 
 
@@ -106,22 +115,33 @@ def _plain(t):
 def _sent(t):
     return len([x for x in re.split(r"[。！？]", _plain(t)) if x.strip()])
 
-print("\n[5a] 敘述篇幅（守則 §10：空手／持有 ≤ %d 字、操作參考／目標價 ≤ %d 字；只量 shorts）"
-      % (LIMITS["空手"][2], LIMITS["操作參考"][2]))
+print("")
+print("[5a] 敘述篇幅（守則 §10：決策欄 ≤ %d、參考欄 ≤ %d、條件盒 ≤ %d、錨點 ≤ %d 字）"
+      % (LIMITS["空手"][2], LIMITS["操作參考"][2], LIMITS["條件盒空"][2], LIMITS["錨點空"][2]))
+_FIELDS = [
+    ("空手", lambda c: EMPTY_S.get(c, "")), ("持有", lambda c: HOLD_S.get(c, "")),
+    ("操作參考", lambda c: OPS_S.get(c, "")), ("目標價", lambda c: TGT_S.get(c, "")),
+    ("錨點空", lambda c: ZONE[c]["buy_anchor"]), ("條件盒空", lambda c: ZONE[c]["buy_cond"]),
+    ("錨點持", lambda c: ZONE[c]["sell_anchor"]), ("條件盒持", lambda c: ZONE[c]["sell_cond"]),
+]
 over = 0
-for lab, d in (("空手", EMPTY_S), ("持有", HOLD_S), ("操作參考", OPS_S), ("目標價", TGT_S)):
+_tot = 0
+for lab, get in _FIELDS:
     lo, hi, cap = LIMITS[lab]
     for c in C.CODES:
-        n, ch = _sent(d.get(c, "")), len(_plain(d.get(c, "")))
+        t = get(c)
+        n, ch = _sent(t), len(_plain(t))
+        _tot += ch
         flag = []
         if not (lo <= n <= hi):
             flag.append("%d 句超出 %d~%d" % (n, lo, hi))
         if ch > cap:
             flag.append("%d 字超出 %d" % (ch, cap))
         over += len(flag)
-        print("    %-6s %s %-6s %2d 句 / %4d 字（每句 %3.0f，上限 %d）  %s"
+        print("    %-5s %s %-6s %2d 句 / %4d 字（每句 %3.0f，上限 %d）  %s"
               % (lab, c, IND["stocks"][c]["name"], n, ch, ch / n if n else 0, cap,
                  "OK" if not flag else "★ " + "；".join(flag)))
+print("    「建議」相關敘述合計 %d 字（%d 檔 × 8 欄）" % (_tot, len(C.CODES)))
 print("    結果：", "全部在守則範圍內" if over == 0 else "★ %d 項超標，交付前請收斂" % over)
 
 # [5b] 同一個數字被寫了幾遍（守則 §14 品質要求：不要同一事實反覆鋪陳）
