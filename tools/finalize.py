@@ -3,7 +3,7 @@
    ★ 寫入順序必須是：個股報告（build_report.py）→ 首頁 → COMMIT_MSG，本檔負責後兩步。
    ★ 移植時不用改。
 """
-import json, os, re, sys, time
+import datetime, json, os, re, sys, time
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE)
@@ -15,6 +15,7 @@ from scores import S, ADV
 from zones import ZONE
 from shorts import EMPTY_S, HOLD_S, OPS_S, TGT_S
 from chips import NOTES as CHIP_NOTES
+from monthly import MONTHLY
 
 D = os.path.join(BASE, "data")
 IND = json.load(open(os.path.join(D, "indicators.json"), encoding="utf-8"))
@@ -180,6 +181,44 @@ else:
         print("    ★ %-10s %2d 處 ｜ %s" % (tok, n, "、".join(hits)))
     print("    結果： ★ %d 個數字超過 %d 處——同一事實請只留籌碼原文＋一處理由＋一處總結"
           % (len(_dup), DUP_MAX))
+
+# [5c] 月營收的連續性與新鮮度（守則 §6）
+#   ⚠⚠ 2026-09-15 新增。起因：inputs/monthly.py 自 2026-08-18 之後六期沒有重抓，
+#   最新一期一直停在 2026-07，而同期間兩檔的 8 月營收都已公布——
+#   ★ 報告的敘述與基本面評分都用了 8 月的數字，底下那張表卻沒有 8 月，前後矛盾。
+#   檔頭本來就寫著「每次跑報告都要重抓更新」，但那句話沒有被任何程式強制。
+#   → ★★ 凡是「靠自覺」的步驟遲早會漏，所以把它變成交付前的硬檢查。
+print("")
+print("[5c] 月營收連續性與新鮮度（守則 §6：上月營收依法 10 日前公布）")
+_bd = datetime.date(*map(int, C.BASE_DATE.split("-")))
+_ey, _em = (_bd.year, _bd.month - 1) if _bd.day > 10 else (_bd.year, _bd.month - 2)
+while _em < 1:
+    _em += 12
+    _ey -= 1
+_exp = "%04d-%02d" % (_ey, _em)
+_mbad = []
+for _c in C.CODES:
+    _yms = [x["ym"] for x in MONTHLY.get(_c, [])]
+    if not _yms:
+        _mbad.append("%s 無資料" % _c)
+        print("    %-5s ★ 無月營收資料" % _c)
+        continue
+    _gaps = []
+    for _i in range(len(_yms) - 1):
+        _y0, _m0 = map(int, _yms[_i].split("-"))
+        _y1, _m1 = map(int, _yms[_i + 1].split("-"))
+        if (_y0 * 12 + _m0) - (_y1 * 12 + _m1) != 1:
+            _gaps.append("%s→%s" % (_yms[_i + 1], _yms[_i]))
+    _ny, _nm = map(int, _yms[0].split("-"))
+    _behind = (_ey * 12 + _em) - (_ny * 12 + _nm)
+    _msg = "新鮮度 OK" if _behind <= 0 else "★ 應已有 %s，落後 %d 個月——請重抓 inputs/monthly.py" % (_exp, _behind)
+    if _behind > 0:
+        _mbad.append("%s 落後 %d 個月" % (_c, _behind))
+    if _gaps:
+        _mbad.append("%s 斷月 %s" % (_c, "、".join(_gaps)))
+    print("    %-5s %2d 期｜最新 %s｜%s｜%s"
+          % (_c, len(_yms), _yms[0], "連續 OK" if not _gaps else "★ 斷月：" + "、".join(_gaps), _msg))
+print("    結果： %s" % ("全部通過" if not _mbad else "★ " + "；".join(_mbad)))
 
 # ── 重建首頁（保留舊期的摘要，只更新最新一期）─────────────────────
 print("\n" + "=" * 92)
