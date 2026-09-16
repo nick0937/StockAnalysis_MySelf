@@ -18,6 +18,9 @@ sys.path.insert(0, BASE)
 import config as C
 
 OUT = os.path.join(BASE, "data", "raw")
+
+# ★ 退化回應的門檻：新回應筆數 < 既有檔 × KEEP_RATIO 就拒絕覆寫（2026-09-16）
+KEEP_RATIO = 0.8
 os.makedirs(OUT, exist_ok=True)
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
@@ -48,10 +51,28 @@ for s in syms:
     except Exception as e:
         print("%-12s FAIL  %s" % (s, e))
         continue
-    open(os.path.join(OUT, s.replace("^", "IDX_") + ".json"), "wb").write(raw)
+    # ★★★ 2026-09-16 新增：退化回應不得覆寫既有的 raw 檔。
+    #   起因：這一天 Yahoo 對 ^TWOII 只回 1 筆（而且是 2024-10-12 的殘值），
+    #   原本的程式照寫不誤，**把本機累積的 445 筆歷史直接洗掉**。
+    #   ⚠ data/raw/ 是 gitignore 的，洗掉就救不回來——同樣的情況打到 1504／1514／^TWII
+    #   會毀掉兩年歷史。所以改成：新回應筆數若少於既有檔的 KEEP_RATIO，就保留舊檔並警告。
+    _p = os.path.join(OUT, s.replace("^", "IDX_") + ".json")
     d = json.loads(raw)["chart"]["result"][0]
     rows = [(t, c) for t, c in zip(d["timestamp"], d["indicators"]["quote"][0]["close"])
             if c is not None]
+    _old_n = 0
+    if os.path.exists(_p):
+        try:
+            _od = json.loads(io.open(_p, encoding="utf-8").read())["chart"]["result"][0]
+            _old_n = len([c for c in _od["indicators"]["quote"][0]["close"] if c is not None])
+        except Exception:
+            _old_n = 0
+    if _old_n and len(rows) < _old_n * KEEP_RATIO:
+        print("%-12s ★ 拒絕覆寫：新回應只有 %d 筆、既有檔有 %d 筆（低於 %.0f%%）"
+              % (s, len(rows), _old_n, KEEP_RATIO * 100))
+        print("%-12s    → 保留舊檔，請人工確認上游是否已撤下該序列" % "")
+        continue
+    open(_p, "wb").write(raw)
     print("%-12s OK  %4d 筆  最後收盤 %.2f" % (s, len(rows), rows[-1][1]))
 
 # ── ★ 大盤指數空值自動回填（證交所 indicesReport/MI_5MINS_HIST，官方 OHLC）──

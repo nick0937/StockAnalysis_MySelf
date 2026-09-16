@@ -25,6 +25,7 @@
 
 ⚠ 全部由本檔計算，<b>手填無效</b>（與 §9.1 的 tech_adj 同一原則）。
 """
+import datetime
 import io
 import json
 import os
@@ -49,7 +50,17 @@ PULLBACK_N = 5       # 拉回確認：回看幾日內曾觸及支撐
 TOUCH_TOL = 0.01     # 觸及容差 1%
 
 
-def _load(sym):
+def _tw_date(ts):
+    """Yahoo 的 timestamp 轉台股日期（與 calc_indicators.tw_date 同一套 +8 小時）。"""
+    return datetime.datetime.fromtimestamp(ts + 8 * 3600, datetime.UTC).strftime("%Y-%m-%d")
+
+
+def _load(sym, cut=None):
+    """★★★ 2026-09-16 修：務必依 config.BASE_DATE 濾掉基準日之後的列。
+    ⚠ 本檔第一版（09-15 寫的）直接讀完整 raw、沒有濾日期——<b>盤中跑「昨天的報告」時，
+      Yahoo 的序列已經含有今天的未完成 K 棒</b>，會被算進 VWAP／Donchian／ATR／吊燈停利。
+      09-16 13:05 實測：Yahoo 的 1504 已有 09/16 盤中 69.80，而 09/15 的真實收盤是 69.00。
+      calc_indicators.py 從一開始就有 CUT，本檔漏了——<b>新模組要照抄既有模組的護欄</b>。"""
     p = os.path.join(RAW, "%s.json" % sym)
     j = json.load(io.open(p, encoding="utf-8"))
     r = j["chart"]["result"][0]
@@ -59,7 +70,10 @@ def _load(sym):
         o, h, l, c, v = (q["open"][i], q["high"][i], q["low"][i], q["close"][i], q["volume"][i])
         if None in (o, h, l, c):
             continue
-        rows.append({"o": o, "h": h, "l": l, "c": c, "v": v or 0})
+        d = _tw_date(r["timestamp"][i])
+        if cut and d > cut:
+            continue
+        rows.append({"d": d, "o": o, "h": h, "l": l, "c": c, "v": v or 0})
     return rows
 
 
@@ -259,12 +273,13 @@ def main():
     ind = json.load(io.open(IND_P, encoding="utf-8"))
     for code, name, sym, _mk, _ind in C.STOCKS:
         a = ind["stocks"][code]
-        ind["stocks"][code]["strat"] = compute(code, a, _load(sym))
-    ind["idx"]["strat"] = compute("IDX", ind["idx"], _load("IDX_TWII"))
+        ind["stocks"][code]["strat"] = compute(code, a, _load(sym, C.BASE_DATE))
+    ind["idx"]["strat"] = compute("IDX", ind["idx"], _load("IDX_TWII", C.BASE_DATE))
     json.dump(ind, io.open(IND_P, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
     print("=" * 96)
-    print("策略訊號（守則 §9.2）　基準日 %s" % ind["idx"]["date"])
+    print("策略訊號（守則 §9.2）　基準日 %s（序列已濾除 %s 之後的列）"
+          % (ind["idx"]["date"], C.BASE_DATE))
     print("=" * 96)
     for code, name, _s, _m, _i in C.STOCKS:
         s = ind["stocks"][code]["strat"]
