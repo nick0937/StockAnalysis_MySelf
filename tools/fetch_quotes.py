@@ -90,7 +90,7 @@ def backfill_index_nulls(path, months=2):
         if q["close"][i] is None:
             nulls[datetime.datetime.fromtimestamp(ts[i]).strftime("%Y/%m/%d")] = i
     if not nulls:
-        return 0, []
+        return 0, [], []     # ★ 2026-10-06 修：原本只回 2 個值，07/10 滾出 60 筆窗口後呼叫端解包失敗
     # 依月份抓官方 OHLC
     official = {}
     for ymd in sorted({k[:7].replace("/", "") + "01" for k in nulls}):

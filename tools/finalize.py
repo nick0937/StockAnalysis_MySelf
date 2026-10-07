@@ -20,7 +20,7 @@ from monthly import MONTHLY
 D = os.path.join(BASE, "data")
 IND = json.load(open(os.path.join(D, "indicators.json"), encoding="utf-8"))
 # ★ 技術面分與大盤面分的組法必須與 build_report.py 完全一致（守則 §9.1）：
-#   技術面 = inputs 判讀分 + lib.tech_adj 的客觀加減分（±10 封頂）；大盤面 = 環境分×50% + RS×50%。
+#   技術面 = inputs 判讀分 + lib.tech_adj 的客觀加減分（±10 封頂）；大盤面 = 環境分（2026-10-06 起 RS 不計分）。
 #   ⚠ 2026-08-19 修：原本這裡只覆寫大盤面、漏了 tech_adj，導致 [1] 一致性檢查、首頁最高分、
 #     COMMIT_MSG 的分數與排名全部用「判讀分」，與報告 HTML（已含加減分）不一致。
 TADJ = {}
@@ -52,7 +52,7 @@ for c in RANK:
 print("    結果：", "全部一致且已正確寫入 HTML" if bad == 0 else "有 %d 檔不符" % bad)
 
 # [2] 大盤面分為公式值
-print("\n[2] 大盤面分 = 環境分 %d × 50%% + RS × 50%%（不主觀給分）" % MK.ENV_SCORE)
+print("\n[2] 大盤面分 = 環境分 %d（RS 只顯示不計分，不主觀給分）" % MK.ENV_SCORE)
 for c in RANK:
     print("    %s %-8s RS %.2f → %d" % (c, nm(c), IND["stocks"][c]["rs"], S[c][3]))
 

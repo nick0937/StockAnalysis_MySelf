@@ -66,8 +66,13 @@ def total_score(five):
 
 
 def market_score(env_score, rs):
-    """大盤面分 = 大盤環境分 × 50% + RS 分 × 50%（不主觀給分）"""
-    return half_up(env_score * .5 + rs * .5)
+    """大盤面分 = 大盤環境分（不主觀給分）。
+
+    2026-10-06 起 RS 不計分、只顯示（守則 §5、§9；與 StockAnalysis 同步）：一年回測 RS 對後續
+    超額報酬沒有預測力（StockAnalysis 9 檔 IC −0.03、本組合 10 檔 −0.06），且 RS（5／20／60 日
+    超額報酬）與技術面的均線排列是同一件事，計了就是把趨勢算兩次。保留 rs 參數只為呼叫端相容。
+    """
+    return half_up(env_score)
 
 
 # ── 技術面客觀加減分（2026-08-19 新增）────────────────────────────
@@ -77,10 +82,14 @@ def market_score(env_score, rs):
 #     因為位置等同於均線多頭／空頭排列，計了就是把趨勢算兩次
 #     （實測會讓最過熱的個股反而加分，方向錯誤）。
 #   - MACD 背離採分級衰減而非硬性截斷：轉折確認後訊號會鈍化但不會瞬間失效。
-DIV_ADJ = {"頂背離": -6.0, "底背離": 6.0, "隱性頂背離": -3.0, "隱性底背離": 3.0}
+#   - 2026-10-06 依一年回測精簡（與 StockAnalysis 同步；事件後 5 日相對同組超額報酬）：
+#     DMA 三組交叉、底背離、隱性背離在 StockAnalysis 9 檔與 Ship 10 檔都沒有訊號（全在 ±1% 內）→ 歸零；
+#     頂背離 StockAnalysis −1.25%、Ship 0.00%，暫維持 −6，2026-11 再驗證。
+#     權重為 0 的項目不計分、也不列入明細；指標格照常顯示 DMA 與背離。
+DIV_ADJ = {"頂背離": -6.0, "底背離": 0.0, "隱性頂背離": 0.0, "隱性底背離": 0.0}
 DIV_FULL_BARS = 10     # <= 此根數：全權
 DIV_HALF_BARS = 20     # <= 此根數：半權；超過則不計分
-DMA_CROSS_ADJ = 2.0    # 單組 DMA 當日交叉的加減分
+DMA_CROSS_ADJ = 0.0    # 單組 DMA 當日交叉的加減分（2026-10-06 起 0）
 TECH_ADJ_CAP = 10      # 合計封頂，避免單一機械訊號蓋過整體判讀
 
 
@@ -89,6 +98,7 @@ def tech_adj(a):
 
     MACD 背離：頂／底同時出現時自然相加抵銷（訊號互相衝突＝不給方向）。
     DMA 三組：只看當日是否交叉，每組 ±DMA_CROSS_ADJ。
+    權重為 0 的項目直接略過，不列入明細。
     """
     items, total = [], 0.0
     for side in ("top", "bottom"):
@@ -96,6 +106,8 @@ def tech_adj(a):
         if not h:
             continue
         base = DIV_ADJ.get(h["kind"], 0.0)
+        if not base:
+            continue
         b = h["bars_since"]
         if b <= DIV_FULL_BARS:
             v, tag = base, ""
@@ -107,7 +119,7 @@ def tech_adj(a):
         total += v
         items.append("%s %s%.1f%s" % (h["kind"], "＋" if v >= 0 else "−", abs(v),
                                       ("・" + tag) if tag else ""))
-    for key in ("3-6", "6-12", "5-20"):
+    for key in ("3-6", "6-12", "5-20") if DMA_CROSS_ADJ else ():
         d = (a.get("dma") or {}).get(key)
         if not d or d["cross"] == "無":
             continue
@@ -127,16 +139,31 @@ def tech_adj(a):
 # ★★★ 由來：使用者列出八項主要策略並要求「有效判斷建議與分數」。
 #   訊號由 tools/strategies.py 計算（手填無效），本函式只把訊號換成有上限的分數。
 #   ⚠ 與 §9.1 的 tech_adj 分開計，再合併封頂，避免兩層機械加減分疊起來蓋過錨定判讀。
+# ★ 2026-10-06 依回測精簡（與 StockAnalysis／Ship 同步）。本組合只有 2 檔，無法自己做橫斷面回測，
+#   改用本檔＋strategies.py 的同一套訊號，套在 StockAnalysis 9 檔＋Ship 10 檔一年價格上驗證
+#   （2025-09~2026-10，4,430 筆，事件後 5 日相對同組超額報酬）：
+#   保留：帶量突破 +1.69%（隔日 +0.85%，t 3.1）、突破 +0.66%、VWAP 當日失守 −0.58%、過冷 +0.94%、
+#         支撐失守 −0.45%、向上跳空未回補 +1.24%；
+#   歸零：VWAP 當日突破（隔日 −0.33%，t −2.2，方向相反）、帶量跌破 −0.07%、跌破 +0.94%（方向相反）、
+#         過熱 +1.00%（方向相反）、向下跳空 +0.26%、拉回確認 +0.24%（出現在 45% 的交易日，近似雜訊）；
+#         VWAP 站上後防守／持續受壓、⑧均線排列＋吊燈停利是持續狀態（位置型），且均線排列已在判讀分內，
+#         計了就是重複計分，實測也都在 ±0.5% 內。
+#   權重為 0 的項目不計分、也不列入明細。
 STRAT_ADJ_CAP = 8       # 策略訊號單獨封頂
 BOTH_ADJ_CAP = 12       # §9.1 ＋ §9.2 合計封頂
 
 _STRAT_RULES = {
-    # 訊號 → (分數, 顯示名)
-    "range": {"帶量突破": 3, "突破": 2, "帶量跌破": -3, "跌破": -2},
-    "vwap":  {"當日突破": 3, "站上後防守": 2, "當日失守": -3, "持續受壓": -2},
-    "mr":    {"過冷（回歸支撐）": 2, "過熱（回歸壓力）": -2},
-    "pb":    {"拉回確認": 2, "支撐失守": -2},
+    # 訊號 → 分數（0＝2026-10-06 起不計分）
+    "range": {"帶量突破": 3, "突破": 2, "帶量跌破": 0, "跌破": 0},
+    "vwap":  {"當日突破": 0, "站上後防守": 0, "當日失守": -3, "持續受壓": 0},
+    "mr":    {"過冷（回歸支撐）": 2, "過熱（回歸壓力）": 0},
+    "pb":    {"拉回確認": 0, "支撐失守": -2},
 }
+STRAT_GAP_UP = 1        # ⑦當日向上跳空未回補
+STRAT_GAP_DN = 0        # ⑦當日向下跳空未回補（2026-10-06 起 0）
+STRAT_TREND_BULL = 0    # ⑧多頭排列且站上吊燈停利（位置型，2026-10-06 起 0；原 +2）
+STRAT_TREND_BEAR = 0    # ⑧空頭排列且跌破吊燈停利（位置型，2026-10-06 起 0；原 −2）
+STRAT_CHAND_BREAK = 0   # ⑧跌破吊燈停利（位置型，2026-10-06 起 0；原 −1）
 
 
 def strat_adj(a):
@@ -150,25 +177,26 @@ def strat_adj(a):
     r = st.get("range", {}).get("state", "")
     for k, v in _STRAT_RULES["range"].items():
         if r.startswith(k):
-            total += v
-            items.append("②%s %s%d" % (r, "＋" if v >= 0 else "−", abs(v)))
+            if v:
+                total += v
+                items.append("②%s %s%d" % (r, "＋" if v >= 0 else "−", abs(v)))
             break
 
     vs = st.get("vwap", {}).get("state", "")
-    if vs in _STRAT_RULES["vwap"]:
+    if _STRAT_RULES["vwap"].get(vs):
         v = _STRAT_RULES["vwap"][vs]
         total += v
         items.append("①⑤VWAP %s %s%d" % (vs, "＋" if v >= 0 else "−", abs(v)))
 
     ms = st.get("meanrev", {}).get("state", "")
-    if ms in _STRAT_RULES["mr"]:
+    if _STRAT_RULES["mr"].get(ms):
         v = _STRAT_RULES["mr"][ms]
         total += v
         items.append("④均值回歸 %s %s%d" % (ms, "＋" if v >= 0 else "−", abs(v)))
 
     pb = st.get("pullback", {})
     ps = pb.get("state", "")
-    if ps in _STRAT_RULES["pb"]:
+    if _STRAT_RULES["pb"].get(ps):
         v = _STRAT_RULES["pb"][ps]
         if ps == "拉回確認" and pb.get("body_warn"):
             v = 1           # 收漲但實體收黑：確認品質較差，只給一半
@@ -179,21 +207,25 @@ def strat_adj(a):
 
     g = (st.get("gaps") or {}).get("today")
     if g and not g.get("filled"):
-        v = 1 if g["dir"] == "up" else -1
-        total += v
-        items.append("⑦當日%s跳空未回補 %s1" % ("向上" if v > 0 else "向下", "＋" if v > 0 else "−"))
+        up = g["dir"] == "up"
+        v = STRAT_GAP_UP if up else -STRAT_GAP_DN
+        if v:
+            total += v
+            items.append("⑦當日%s跳空未回補 %s%d" % ("向上" if up else "向下", "＋" if v > 0 else "−", abs(v)))
 
     t = st.get("trend", {})
     al, ac = t.get("align"), t.get("above_chand")
     if al == "多頭排列" and ac:
-        total += 2
-        items.append("⑧多頭排列且站上吊燈停利 ＋2")
+        v, lab = STRAT_TREND_BULL, "⑧多頭排列且站上吊燈停利"
     elif al == "空頭排列" and not ac:
-        total += -2
-        items.append("⑧空頭排列且跌破吊燈停利 −2")
+        v, lab = -STRAT_TREND_BEAR, "⑧空頭排列且跌破吊燈停利"
     elif ac is False:
-        total += -1
-        items.append("⑧跌破吊燈停利 −1")
+        v, lab = -STRAT_CHAND_BREAK, "⑧跌破吊燈停利"
+    else:
+        v, lab = 0, ""
+    if v:
+        total += v
+        items.append("%s %s%d" % (lab, "＋" if v > 0 else "−", abs(v)))
 
     adj = half_up(max(-STRAT_ADJ_CAP, min(STRAT_ADJ_CAP, total)))
     if abs(total) > STRAT_ADJ_CAP:

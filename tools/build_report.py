@@ -524,7 +524,7 @@ for c in RANK:
                             for p, v in zip(C.FUND_PARTS, FUND[c]))))
     _tb, _ta, _tw = TADJ[c]
     A('<p class="tnote fdet">技術面 %d 分 ＝ 判讀分 %d %s %d'
-      '（DMA 與 MACD 背離的<b>客觀加減分</b>，±10 封頂；KD／RSI／乖離／布林已計入判讀分，不重複計）'
+      '（MACD 頂背離的<b>客觀加減分</b>，±10 封頂；KD／RSI／乖離／布林已計入判讀分，不重複計）'
       '%s</p>'
       % (S[c][1], _tb, "＋" if _ta >= 0 else "−", abs(_ta),
          ("：" + "、".join(_tw)) if _tw else "：本期無觸發項目"))
