@@ -55,6 +55,24 @@ def _tw_date(ts):
     return datetime.datetime.fromtimestamp(ts + 8 * 3600, datetime.UTC).strftime("%Y-%m-%d")
 
 
+_IDX_DAYS = None
+
+
+def _idx_days():
+    """大盤有收盤價的日期＝交易日曆（供 _load 濾除休市日的假 K 棒）；讀不到時回 None、不濾。"""
+    global _IDX_DAYS
+    if _IDX_DAYS is None:
+        try:
+            import config as C
+            j = json.load(io.open(os.path.join(RAW, C.INDEX_SYM.replace("^", "IDX_") + ".json"), encoding="utf-8"))
+            r = j["chart"]["result"][0]
+            q = r["indicators"]["quote"][0]
+            _IDX_DAYS = {_tw_date(t) for i, t in enumerate(r["timestamp"]) if q["close"][i] is not None}
+        except Exception:
+            return None
+    return _IDX_DAYS
+
+
 def _load(sym, cut=None):
     """★★★ 2026-09-16 修：務必依 config.BASE_DATE 濾掉基準日之後的列。
     ⚠ 本檔第一版（09-15 寫的）直接讀完整 raw、沒有濾日期——<b>盤中跑「昨天的報告」時，
@@ -65,6 +83,7 @@ def _load(sym, cut=None):
     j = json.load(io.open(p, encoding="utf-8"))
     r = j["chart"]["result"][0]
     q = r["indicators"]["quote"][0]
+    days = _idx_days()
     rows = []
     for i in range(len(r["timestamp"])):
         o, h, l, c, v = (q["open"][i], q["high"][i], q["low"][i], q["close"][i], q["volume"][i])
@@ -72,6 +91,9 @@ def _load(sym, cut=None):
             continue
         d = _tw_date(r["timestamp"][i])
         if cut and d > cut:
+            continue
+        # ★ 2026-10-29 修（同 calc_indicators.load）：量 0 且大盤當天沒有收盤價＝休市日的假 K 棒。
+        if not v and days is not None and d not in days:
             continue
         rows.append({"d": d, "o": o, "h": h, "l": l, "c": c, "v": v or 0})
     return rows

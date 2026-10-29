@@ -19,6 +19,20 @@ def tw_date(ts):
     return datetime.datetime.fromtimestamp(ts + 8 * 3600, datetime.UTC).strftime("%Y-%m-%d")
 
 
+_IDX_DAYS = None
+
+
+def idx_days():
+    """大盤（INDEX_SYM）有收盤價的日期＝交易日曆。"""
+    global _IDX_DAYS
+    if _IDX_DAYS is None:
+        d = json.load(open(os.path.join(RAW, C.INDEX_SYM.replace("^", "IDX_") + ".json"), encoding="utf-8"))
+        res = d["chart"]["result"][0]
+        q = res["indicators"]["quote"][0]
+        _IDX_DAYS = {tw_date(t) for i, t in enumerate(res["timestamp"]) if q["close"][i] is not None}
+    return _IDX_DAYS
+
+
 def load(sym):
     d = json.load(open(os.path.join(RAW, sym.replace("^", "IDX_") + ".json"), encoding="utf-8"))
     res = d["chart"]["result"][0]
@@ -30,6 +44,11 @@ def load(sym):
             continue
         dt = tw_date(t)
         if dt > CUT:                      # ★ 濾除未完成 K 棒
+            continue
+        # ★ 2026-10-29 修：濾除休市日的假 K 棒。Yahoo 在 10/23 颱風休市那天替個股補了一根
+        #   量 0、開高低收＝前一日收盤的 K 棒（大盤那天是空值），被算進均線／KD／布林／均量。
+        #   判法：量 0 且大盤當天沒有收盤價 → 不是交易日。真正交易日的零成交不受影響。
+        if sym != C.INDEX_SYM and not (q["volume"][i] or 0) and dt not in idx_days():
             continue
         seen[dt] = {"d": dt, "o": q["open"][i], "h": q["high"][i],
                     "l": q["low"][i], "c": c, "v": q["volume"][i] or 0}
