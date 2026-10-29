@@ -1,10 +1,10 @@
 {
- "quote_time": "2026-10-29 11:07",
- "gen_time": "2026-10-29 11:07",
- "phase": "盤中",
- "base_date": "2026-10-28",
- "alerts": 6,
+ "quote_time": "2026-10-29 13:30",
+ "gen_time": "2026-10-29 18:14",
+ "phase": "已收盤（報價為今日收盤價）",
+ "base_date": "2026-10-29",
+ "alerts": 5,
  "source": "玩股網",
- "lag_min": 0,
+ "lag_min": 284,
  "delayed": false
 }
