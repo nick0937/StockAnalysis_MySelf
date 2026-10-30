@@ -277,11 +277,19 @@ for c in C.CODES:
     #   說明欄一律 ≤ SHORT_CAP 字。原本每個分支都把 zones.py 的 buy_cond／sell_cond
     #   整段照貼（334~595 字），加上 anchor 之後單欄衝到 814~1352 字——
     #   那是日報的「參考欄」，本頁不該再展開一次；完整條件用卡片上的日報連結去看。
-    if bz is None:                                    # 「暫不設買點」
+    if bz is None and ADV[c][0] != "e-no":           # 標籤已放寬、但買進區間暫不成立
+        # ★ 2026-10-30 修（守則 §19.7b）：10/22 定案「5 日線在月線之下時區間暫不成立」之後，
+        #   e-wait 的 buy_lo／buy_hi 會是 None；原本一律落到「日報未設買點，門檻未過」——
+        #   10/28 的 1504 門檻明明已過、只是區間還沒成立，即時頁卻講成門檻未過。
+        e_cls, e_act = "a-wait", "等買進區間成立"
+        e_why = "日報是「%s」，但買進區間%s，成立前不進。" % (e_lab, z["buy_zone"])
+    elif bz is None:                                  # 「暫不設買點」
         e_cls, e_act = "a-no", "不宜買進"
         _w = _lv.get("watch")
-        e_why = ("日報未設買點，門檻未過。" +
-                 ("先看能否帶量站上 %s 元。" % fmt(_w) if _w else "條件見日報。"))
+        # ★ 2026-10-30 改：原本寫「先看能否帶量站上 X 元」，但不是每一檔的門檻都要求帶量
+        #   （1504 的再放寬是「收盤收復當日月線且融資減」），門檻細節留給日報條件盒。
+        e_why = ("日報未設買點，重新評估的門檻未過。" +
+                 ("觀察價位 %s 元，完整門檻見日報。" % fmt(_w) if _w else "條件見日報。"))
     elif bz[0] <= px <= bz[1]:
         # ★ 必須尊重日報的空手結論（與下方持有分支同一原則）。
         #   ⚠ 2026-08-24 補：原本只看價位，日報的 e-wait／e-no 會被升級成
@@ -314,7 +322,15 @@ for c in C.CODES:
     # ★ MySelf 專屬：帶量突破上緣時，日報訂的是「改移動停利、不要機械式賣光」，
     #   不可講成「優先執行」——否則會與同一張卡片下方由 lib.position_plan 算出的
     #   「改移動停利、N 張不動」互相矛盾。門檻與 position_plan 一致（量比 ≥ 1.5）。
-    if sz and px > sz[1] and h_kind == "h-tp" and vr is not None and vr >= 1.5:
+    # ★ 2026-10-30 修（守則 §19.7b）：日報已觸發「全數出清」者（h-exit 的一種），價格高低都不改變動作。
+    #   原本會依價位落到別的分支：進入 sell 區間時印「分批執行而非一次出清」（與全數出清直接矛盾），
+    #   未到區間時把 sell_zone 文字「全數出清，不等反彈」塞進「不因價格未到 … 而改為續抱」，句子破碎。
+    h_full = h_kind == "h-exit" and ADV[c][5] == "全數出清"
+    _stop = _lv.get("stop")
+    if h_full:
+        h_cls, h_act = "a-cut", "全數出清，不等反彈"
+        h_why = "日報已觸發全數出清，觸發後不回頭改寫；價格漲跌都不改變這個動作。"
+    elif sz and px > sz[1] and h_kind == "h-tp" and vr is not None and vr >= 1.5:
         h_cls = "a-hold"
         h_act = "帶量突破%s上緣，改移動停利、不要機械式賣光" % z["sell_lab"]
         h_why = ("量比 %.2f 倍 ≥ 1.5 且站上上緣 %s 元＝<b>趨勢轉強而非反彈</b>，"
@@ -332,6 +348,12 @@ for c in C.CODES:
         h_why = ("%s %s，分批執行而非一次出清；跌破 %s 元則剩餘部位不必等反彈。"
                  % (z["sell_lab"], z["sell_zone"], fmt(ma5)))
         ALERTS.append((c, "賣", "價格進入%s %s" % (z["sell_lab"], z["sell_zone"])))
+    elif _stop and px < _stop:
+        # ★ 2026-10-30 補：持倉層的 position_plan 跌破 stop 就換算成全數出場，持有欄原本不看 stop，
+        #   同一張卡片會出現「跌破月線，加快減碼」與「出場 N 張（全部）」兩種說法。
+        h_cls, h_act = "a-cut", "跌破出場價 %s 元，全數出場" % fmt(_stop)
+        h_why = "日報訂的出場價已跌破，剩餘部位不必等反彈。"
+        ALERTS.append((c, "警", "跌破出場價 %s 元" % fmt(_stop)))
     elif ma20 and px < ma20:
         h_cls, h_act = "a-cut", "跌破月線 %s 元，加快%s" % (fmt(ma20), base)
         h_why = "月線是中期多空分界、已在其下，不必等回到%s。" % z["sell_lab"]
@@ -382,9 +404,25 @@ for c in C.CODES:
     pos = pl_calc(p["shares"], p["cost"], px, p.get("div_ps") or 0.0) if p else None
     lv = dict(LIVE[c]); lv["_lab"] = z["sell_lab"]
     plan = position_plan(px, lv, p, vr, TRIM_FRAC) if p else None
-    if plan and plan["act"] in ("exit", "trim"):
+    # ★ 2026-10-30 修（守則 §19.7b）：「待處理」張數一律由持有欄的結論決定，position_plan 的 act 只是價位狀態。
+    #   原本頁首的待處理清單與「倉」提醒只認 act ∈ (exit, trim)，卡片卻在 a-cut／a-sell 時印
+    #   「換算成 N 張待處理」——10/29 收盤 1514 卡片寫 1 張待處理、頁首清單卻只列東元。
+    #   現在三處（頁首清單、提醒、卡片）共用同一組 due／due_t／due_rz。
+    due, due_t = None, None
+    if plan:
+        if h_full:
+            due, due_t = plan["n_lots"], "全數出清"
+        elif plan["act"] == "exit":
+            due, due_t = plan["n_lots"], "出場"
+        elif plan["act"] == "trim" and h_cls == "a-sell":
+            due, due_t = plan["lots"], plan["title"]
+        elif h_cls in ("a-cut", "a-sell"):
+            due = plan["n_lots"] if h_kind == "h-exit" else trim_lots(plan["n_lots"], TRIM_FRAC)
+            due_t = base
+    due_rz = (px - p["cost"]) * due * 1000 if (due and px is not None) else None
+    if due:
         ALERTS.append((c, "倉", "你的部位：%s %g 張（以現價計實現 %s 元）"
-                       % (plan["title"], plan["lots"], mny(plan.get("realized")))))
+                       % (due_t, due, mny(due_rz))))
 
     if c in C.TIME_PRESSURE:
         ALERTS.append((c, "時", C.TIME_PRESSURE[c].split("、")[0]))
@@ -397,7 +435,8 @@ for c in C.CODES:
                      tp=C.TIME_PRESSURE.get(c, ""),
                      hk=h_kind, sz0=sz[0] if sz else None, sz1=sz[1] if sz else None,
                      ma5=ma5, ma20=ma20, slab=z["sell_lab"], szone=z["sell_zone"],
-                     pos=pos, plan=plan, cost=(p or {}).get("cost")))
+                     pos=pos, plan=plan, cost=(p or {}).get("cost"),
+                     due=due, due_t=due_t, due_rz=due_rz, h_full=h_full))
 
 ROWS.sort(key=lambda r: -r["tot"])
 
@@ -619,8 +658,7 @@ if _ph:
     _mv = sum(r["pos"]["mkt_val"] for r in _ph)
     _pl = _mv - _cv
     _k = "up" if _pl > 0 else ("dn" if _pl < 0 else "")
-    _todo = ["%s %s %g 張" % (r["name"], r["plan"]["title"], r["plan"]["lots"])
-             for r in _ph if r.get("plan") and r["plan"]["act"] in ("exit", "trim")]
+    _todo = ["%s %s %g 張" % (r["name"], r["due_t"], r["due"]) for r in _ph if r.get("due")]
     w('<div class="sum">')
     w('<div class="st">你的投資組合（持倉來源：%s，%s）</div>' % (POS_SRC, POS_AS_OF))
     w('<div class="sg">'
@@ -678,11 +716,13 @@ for r in ROWS:
           % (_p["lots"], fmt(_p["cost"]), "{:,.0f}".format(_p["mkt_val"]),
              _k2, mny(_p["pl"]), _p["pl_pct"]))
         if _pn:
-            if _pn["act"] in ("exit", "trim"):
-                w('<div class="pw">上方「持有」＝%s，換算成 %g 張'
+            # ★ 2026-10-30 改（守則 §19.7b）：待處理張數改用迴圈裡算好的 due（頁首清單、提醒共用同一個數字）。
+            #   這一行同時取代原本 exit／trim 分支與 keep 分支裡的 a-cut／a-sell 換算（2026-08-31 §19.7a）。
+            if r.get("due"):
+                w('<div class="pw">上方「持有」＝%s，<b>換算成 %g 張待處理</b>'
                   '（共 %g 張，留 %g 張）；以現價 %s 元計，這 %g 張實現 %s 元</div>'
-                  % (_pn["title"], _pn["lots"], _pn["n_lots"], _pn["n_lots"] - _pn["lots"],
-                     fmt(r["px"]), _pn["lots"], mny(_pn.get("realized"))))
+                  % (r["h_act"], r["due"], _pn["n_lots"], _pn["n_lots"] - r["due"],
+                     fmt(r["px"]), r["due"], mny(r["due_rz"])))
             elif _pn["act"] == "trail":
                 w('<div class="pw">上方「持有」＝%s，%g 張不動（帶量突破，不機械式賣光）</div>'
                   % (_pn["title"], _pn["n_lots"]))
@@ -702,28 +742,18 @@ for r in ROWS:
                       % (fmt(_pn["buy_lo"]), fmt(_pn["buy_hi"]),
                          ADV[r["c"]][2], _pn["n_lots"]))
             else:
-                # ★★ 2026-08-31 修（守則 §19.7a）：position_plan 的 keep 分支只看價位落在哪個
-                #   區間（below_sell → keep／續抱），不看日報結論；當 h_cls 已是 a-cut／a-sell
-                #   （例如 h-exit 又跌破 5 日線 → 上方寫「出場不必再等反彈」），
-                #   這行會印成「上方「持有」＝續抱，N 張不動」——而它宣稱自己等於上方那一欄，
-                #   等於用最肯定的句式講反話。08/31 盤中 1514 在 102.00 元就是這個情況。
-                #   → a-cut／a-sell 時改成印「待處理張數」：h-exit 全數、h-cut 依 TRIM_FRAC。
-                if r["h_cls"] in ("a-cut", "a-sell"):
-                    _due = (_pn["n_lots"] if r["hk"] == "h-exit"
-                            else trim_lots(_pn["n_lots"], TRIM_FRAC))
-                    _rz = ((r["px"] - r["cost"]) * _due * 1000
-                           if (r["px"] is not None and r["cost"]) else None)
-                    w('<div class="pw">上方「持有」＝%s，<b>換算成 %g 張待處理</b>'
-                      '（共 %g 張，留 %g 張）；以現價 %s 元計，這 %g 張實現 %s 元</div>'
-                      % (r["h_act"], _due, _pn["n_lots"], _pn["n_lots"] - _due,
-                         fmt(r["px"]), _due, mny(_rz)))
-                else:
-                    w('<div class="pw">上方「持有」＝%s，%g 張不動%s</div>'
-                      % (_pn["title"], _pn["n_lots"],
-                         ("　·　距解套價 %s 元還要漲 %.1f%%"
-                          % (fmt(_pn["breakeven"]), (_pn["breakeven"] / r["px"] - 1) * 100))
-                         if (r["px"] and _pn["breakeven"] > r["px"]) else ""))
-            if _pn.get("note"):
+                # ★★ 2026-08-31 修（守則 §19.7a）：position_plan 的 keep 只代表價位落在停損與賣出區間之間，
+                #   不代表日報說續抱；h_cls 為 a-cut／a-sell 時要印待處理張數。
+                #   2026-10-30 起這個情況由上面的 due 分支處理（trim_lots 至少 1 張，due 不會是 0），
+                #   走到這裡的一定是持有欄本身就是續抱／縮手。
+                w('<div class="pw">上方「持有」＝%s，%g 張不動%s</div>'
+                  % (_pn["title"], _pn["n_lots"],
+                     ("　·　距解套價 %s 元還要漲 %.1f%%"
+                      % (fmt(_pn["breakeven"]), (_pn["breakeven"] / r["px"] - 1) * 100))
+                     if (r["px"] and _pn["breakeven"] > r["px"]) else ""))
+            # ★ 2026-10-30：全數出清的持股，zones.LIVE 的 sell_lo／sell_hi 只是保留給頁面比對的價位
+            #   （布林上軌～年線），不是出場區間；「解套價高於出場時點上緣」會讓人以為還有區間可等。
+            if _pn.get("note") and not r["h_full"]:
                 w('<div class="pn">⚠ %s</div>' % _pn["note"])
         w("</div>")
 
@@ -764,13 +794,13 @@ w('<div class="foot"><h3>這頁在做什麼</h3>'
   '獲利且已進停利區＝分批停利、獲利達 15%% 可提前部分停利、'
   '虧損 5%% 進入警戒、虧損 10%% 觸及停損紀律（並以月線為最後防線）。此為規則式試算，非投資建議。</p>'
   '<h3>報價來源與延遲</h3>'
-  '<p>Yahoo Finance 即時報價（%s），台股報價通常有數分鐘至 15 分鐘延遲，'
+  '<p>%s 報價（%s；優先序 玩股網 → 證交所 MIS → Yahoo Finance，Yahoo 約延遲 15~20 分鐘），'
   '成交量為當日累計。本頁每次執行都會整份覆蓋，不保留歷史。</p>'
   '<h3>免責聲明</h3>'
   '<p>本頁由自動化流程產生，僅供研究與教育參考，不構成投資建議、要約或招攬，'
   '亦不保證資料之完整性、即時性與正確性。實際下單前請自行以券商報價複核價格，'
   '投資有風險，讀者應自行判斷並承擔所有投資決策之後果。</p></div>'
-  % (C.BASE_DATE, QT.strftime("%Y-%m-%d %H:%M")))
+  % (C.BASE_DATE, SRC_LABEL, QT.strftime("%Y-%m-%d %H:%M")))
 
 w('</div>\n<p style="text-align:center;color:#7a8798;font-size:11.5px;margin:14px 0 20px">'
   '產生時間 %s（台北時間）</p>' % NOW.strftime("%Y-%m-%d %H:%M"))
