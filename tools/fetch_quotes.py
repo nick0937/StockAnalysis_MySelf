@@ -134,6 +134,76 @@ if os.path.isfile(_idx_path):
     except Exception as e:
         print("   ★ 回填程序失敗：%s —— 請人工檢查空值列" % e)
 
+# ── ★ 個股收盤空值自動回填（證交所 afterTrading/STOCK_DAY，官方 OHLC）──
+#   ★ 2026-11-03 新增：11/02 的 Yahoo 個股 K 棒有開高低量、收盤卻是 null（大盤同日也是 null，
+#     由上面的 backfill_index_nulls 補了），calc_indicators 會把整列丟掉，指標停在前一個交易日
+#     ——基準日 11/02 的報告會拿 10/30 的收盤當成 11/02。和大盤那一段同樣的理由：本檔每次重抓都會覆寫，
+#     手動補會被擦掉，所以抓完就自動補。
+#   ⚠ 只補收盤為 null 的列；開高低若有值就保留（實測與官方一致），只補 null 的欄位；
+#     成交量 Yahoo 有值就保留（與其他列同一來源，官方 STOCK_DAY 的股數口徑略大約 1%），null 才用官方值。
+def backfill_stock_nulls(path, code, months=2):
+    """回傳 (補了幾列, 補上的說明清單, 仍為空的日期清單)。"""
+    import datetime
+    d = json.loads(open(path, "rb").read().decode("utf-8"))
+    r = d["chart"]["result"][0]
+    q = r["indicators"]["quote"][0]
+    ts = r["timestamp"]
+    nulls = {}
+    for i in range(max(0, len(ts) - 60), len(ts)):          # 只看近 60 筆
+        if q["close"][i] is None:
+            nulls[datetime.datetime.fromtimestamp(ts[i]).strftime("%Y/%m/%d")] = i
+    if not nulls:
+        return 0, [], []
+    official = {}
+    for ymd in sorted({k[:7].replace("/", "") + "01" for k in nulls}):
+        try:
+            raw = get("https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY"
+                      "?date=%s&stockNo=%s&response=json" % (ymd, code))
+            for row in json.loads(raw).get("data", []):
+                roc = row[0].split("/")
+                key = "%d/%s/%s" % (int(roc[0]) + 1911, roc[1], roc[2])
+                try:
+                    official[key] = [float(x.replace(",", "")) for x in (row[3], row[4], row[5], row[6], row[1])]
+                except ValueError:                       # 當日無成交時價格欄是 "--"
+                    continue
+            time.sleep(1.5)
+        except Exception as e:
+            print("   ⚠ %s 官方端點抓取失敗（%s）：%s" % (code, ymd, e))
+    done = []
+    for key, i in sorted(nulls.items()):
+        if key not in official:
+            continue
+        o, h, l, c, v = official[key]
+        q["close"][i] = c
+        for fld, val in (("open", o), ("high", h), ("low", l), ("volume", v)):
+            if q[fld][i] is None:
+                q[fld][i] = int(val) if fld == "volume" else val
+        for a in (r.get("indicators", {}).get("adjclose") or []):
+            if isinstance(a.get("adjclose"), list) and a["adjclose"][i] is None:
+                a["adjclose"][i] = c
+        done.append("%s（收 %.2f；開 %.2f 高 %.2f 低 %.2f 沿用 Yahoo 或官方）" % (key, c, q["open"][i], q["high"][i], q["low"][i]))
+    if done:
+        json.dump(d, io.open(path, "w", encoding="utf-8"), ensure_ascii=False)
+    return len(done), done, [k for k in sorted(nulls) if k not in official]
+
+
+print()
+print("★ 個股收盤空值檢查（近 60 筆，證交所 STOCK_DAY 回填）")
+for c in C.CODES:
+    _p = os.path.join(OUT, C.SYM[c].replace("^", "IDX_") + ".json")
+    if not os.path.isfile(_p):
+        continue
+    try:
+        n_done, done, left = backfill_stock_nulls(_p, c)
+        if not n_done and not left:
+            print("   %s 沒有空值列" % c)
+        for x in done:
+            print("   ✅ %s 已由證交所官方資料回填 %s" % (c, x))
+        for x in left:
+            print("   ★ %s %s 仍為空值——官方端點也查不到（盤中未完成的 K 棒會在這裡，屬正常）" % (c, x))
+    except Exception as e:
+        print("   ★ %s 回填程序失敗：%s —— 請人工檢查空值列" % (c, e))
+
 # ── 大盤成交金額與股數（證交所 FMTQIK，官方、有整月歷史）──
 ym = C.BASE_DATE[:7].replace("-", "") + "01"
 try:
