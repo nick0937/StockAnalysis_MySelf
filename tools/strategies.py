@@ -318,9 +318,12 @@ def main():
               % (mr["bias20"], mr["mu"], mr["sd"], mr["z"], mr["state"]))
         pb = s["pullback"]
         print("  ⑥  拉回確認   <%s>　%s" % (pb["state"], pb["why"]))
+        # ★ 2026-11-02 修：收盤低於所有參考價位時 nearest_sup 是 None（10/30 的 1514 收 93.20、
+        #   跌破布林下軌與 20 日區間低），原本直接取下標，整支 calc_indicators.py 在最後一步當掉。
         su, re_ = s["nearest_sup"], s["nearest_res"]
-        print("      最近支撐 %s %.2f（%+.2f%%）｜最近壓力 %s %.2f（%+.2f%%）"
-              % (su["name"], su["px"], su["dist_pct"], re_["name"], re_["px"], re_["dist_pct"]))
+        _lv = lambda t, lab: ("%s %s %.2f（%+.2f%%）" % (lab, t["name"], t["px"], t["dist_pct"])
+                              if t else "%s 無（收盤已在所有參考價位之%s）" % (lab, "下" if lab == "最近支撐" else "上"))
+        print("      %s｜%s" % (_lv(su, "最近支撐"), _lv(re_, "最近壓力")))
         g = s["gaps"]
         uf = g["unfilled"]
         print("  ⑦  缺口       近 %d 日 %d 個｜未回補 %d 個%s"
