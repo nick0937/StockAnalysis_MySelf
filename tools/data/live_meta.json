@@ -1,10 +1,10 @@
 {
- "quote_time": "2026-11-25 13:30",
- "gen_time": "2026-11-26 01:40",
+ "quote_time": "2026-11-26 13:30",
+ "gen_time": "2026-11-27 04:00",
  "phase": "休市（報價為前一交易日收盤）",
- "base_date": "2026-11-25",
+ "base_date": "2026-11-26",
  "alerts": 4,
  "source": "玩股網",
- "lag_min": 730,
+ "lag_min": 870,
  "delayed": false
 }
